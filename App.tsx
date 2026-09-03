@@ -6,7 +6,7 @@ import { RoommatePage } from './components/RoommatePage';
 import { NotificationCenter } from './components/NotificationCenter';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { SwapIcon, PlusCircleIcon, SearchIcon, UserGroupIcon, ChartBarIcon } from './components/icons';
-import { getListings, saveListing, deleteListing, getRoommateSearches, saveRoommateSearch, createOrUpdateUser, getUser, updateUserLastActive, testFirebaseConnection } from './firebase/firestoreService';
+import { getListings, saveListing, deleteListing, getRoommateSearches, saveRoommateSearch, deleteRoommateSearch, createOrUpdateUser, getUser, updateUserLastActive, testFirebaseConnection } from './firebase/firestoreService';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 
 type View = 'my-listing' | 'explore' | 'roommate' | 'analytics';
@@ -33,6 +33,7 @@ export default function App() {
     const [roommateSearches, setRoommateSearches] = useState<RoommateSearch[]>([]);
     const [myRoommateSearchId, setMyRoommateSearchId] = useState<string | null>(null);
     const [currentView, setCurrentView] = useState<View>('explore');
+    const [openListingForm, setOpenListingForm] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
     const [isNavbarVisible, setIsNavbarVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
@@ -54,6 +55,46 @@ export default function App() {
         lastActive: new Date().toISOString()
     });
     const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+    // Bildirim fonksiyonları
+    const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
+        const newNotification: Notification = {
+            ...notification,
+            id: `notification-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+            timestamp: new Date().toISOString()
+        };
+        setNotifications(prev => [newNotification, ...prev]);
+        
+        // localStorage'a kaydet
+        try {
+            const saved = JSON.parse(localStorage.getItem('notifications') || '[]');
+            localStorage.setItem('notifications', JSON.stringify([newNotification, ...saved]));
+        } catch {}
+    }, []);
+
+    const markNotificationAsRead = useCallback((notificationId: string) => {
+        setNotifications(prev => {
+            const updated = prev.map(n => n.id === notificationId ? { ...n, read: true } : n);
+            try { localStorage.setItem('notifications', JSON.stringify(updated)); } catch {}
+            return updated;
+        });
+    }, []);
+
+    const markAllNotificationsAsRead = useCallback(() => {
+        setNotifications(prev => {
+            const updated = prev.map(n => ({ ...n, read: true }));
+            try { localStorage.setItem('notifications', JSON.stringify(updated)); } catch {}
+            return updated;
+        });
+    }, []);
+
+    const deleteNotification = useCallback((notificationId: string) => {
+        setNotifications(prev => {
+            const updated = prev.filter(n => n.id !== notificationId);
+            try { localStorage.setItem('notifications', JSON.stringify(updated)); } catch {}
+            return updated;
+        });
+    }, []);
     
     // Kullanıcı ID'si oluştur veya al
     const getOrCreateUserId = (): string => {
@@ -144,19 +185,47 @@ export default function App() {
             const savedMyId = localStorage.getItem('dorm-swap-my-id');
             if (savedMyId) {
                 setMyListingId(savedMyId);
+            } else {
+                // Auto-restore by userId
+                const byUser = mergedListings.find(l => l.userId === userId);
+                if (byUser) {
+                    setMyListingId(byUser.id);
+                }
             }
+
             const savedRoommateId = localStorage.getItem('dorm-swap-roommate-id');
             if (savedRoommateId) {
                 setMyRoommateSearchId(savedRoommateId);
             } else if (localMySearch) {
                 setMyRoommateSearchId(localMySearch.id);
+            } else {
+                // Auto-restore by userId
+                const byUser = merged.find(s => s.userId === userId);
+                if (byUser) {
+                    setMyRoommateSearchId(byUser.id);
+                }
             }
+
+            // Hoş geldin bildirimi kontrolü
+            try {
+                const savedNotifs = JSON.parse(localStorage.getItem('notifications') || '[]');
+                if (savedNotifs.length === 0) {
+                    addNotification({
+                        userId,
+                        type: 'system',
+                        title: 'Hoş Geldiniz!',
+                        message: 'Findroom %100 ücretsiz ve açık bir öğrenci platformudur. Hemen yurt takası ve oda arkadaşı ilanı oluşturabilirsiniz.',
+                        read: false
+                    });
+                }
+            } catch {}
+
             // Always start on Keşfet
             setCurrentView('explore');
             setIsInitialized(true);
         };
         initializeApp();
-    }, []);
+    }, [addNotification]);
 
     useEffect(() => {
         if (isInitialized) {
@@ -175,23 +244,35 @@ export default function App() {
     }, [myListingId, myRoommateSearchId, currentView, isInitialized]);
 
     const addOrUpdateListing = useCallback(async (newListing: Listing) => {
+        const listingToSave: Listing = {
+            ...newListing,
+            userId: currentUser?.id || getOrCreateUserId()
+        };
+
         // Optimistic UI update for a responsive feel
         setListings(prev => {
-            const existingIndex = prev.findIndex(l => l.id === newListing.id);
+            const existingIndex = prev.findIndex(l => l.id === listingToSave.id);
             if (existingIndex > -1) {
                 const updatedListings = [...prev];
-                updatedListings[existingIndex] = newListing;
+                updatedListings[existingIndex] = listingToSave;
                 return updatedListings;
             }
-            return [newListing, ...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            return [listingToSave, ...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         });
-        setMyListingId(newListing.id);
+        setMyListingId(listingToSave.id);
         // Persist my listing locally so it survives refresh
-        try { localStorage.setItem('my-listing', JSON.stringify(newListing)); } catch {}
+        try { localStorage.setItem('my-listing', JSON.stringify(listingToSave)); } catch {}
 
         // Save to Firestore
         try {
-            await saveListing(newListing);
+            await saveListing(listingToSave);
+            addNotification({
+                userId: currentUser?.id || 'guest',
+                type: 'new_listing',
+                title: 'Talep Kaydedildi',
+                message: 'Yurt takas talebiniz başarıyla yayınlandı.',
+                read: false
+            });
         } catch (error) {
             console.error("Failed to save listing to Firestore:", error);
             alert("İlan kaydedilemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.");
@@ -199,11 +280,12 @@ export default function App() {
             const listingsFromDb = await getListings();
             setListings(listingsFromDb);
         }
-    }, []);
+    }, [currentUser, addNotification]);
 
     const addOrUpdateRoommateSearch = useCallback(async (newSearch: RoommateSearch) => {
         const normalized: RoommateSearch = {
             ...newSearch,
+            userId: currentUser?.id || getOrCreateUserId(),
             building: newSearch.building.trim().toUpperCase(),
             roomNumber: newSearch.roomNumber.trim(),
             contactInfo: newSearch.contactInfo.trim(),
@@ -224,11 +306,18 @@ export default function App() {
 
         try {
             await saveRoommateSearch(normalized);
+            addNotification({
+                userId: currentUser?.id || 'guest',
+                type: 'new_listing',
+                title: 'Arama Yayınlandı',
+                message: 'Oda arkadaşı aramanız başarıyla listelendi.',
+                read: false
+            });
         } catch (error) {
             console.error("Failed to save roommate search:", error);
             alert("Arama kaydedilemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.");
         }
-    }, []);
+    }, [currentUser, addNotification]);
 
     const deleteListingHandler = useCallback(async (listingId: string) => {
         try {
@@ -243,6 +332,13 @@ export default function App() {
             
             // Delete from Firestore
             await deleteListing(listingId);
+            addNotification({
+                userId: currentUser?.id || 'guest',
+                type: 'system',
+                title: 'İlan Silindi',
+                message: 'Yurt takas talebiniz başarıyla silindi.',
+                read: false
+            });
         } catch (error) {
             console.error("Failed to delete listing:", error);
             alert("İlan silinemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.");
@@ -250,7 +346,36 @@ export default function App() {
             const listingsFromDb = await getListings();
             setListings(listingsFromDb);
         }
-    }, [myListingId]);
+    }, [myListingId, currentUser, addNotification]);
+
+    const deleteRoommateSearchHandler = useCallback(async (searchId: string) => {
+        try {
+            // Optimistic UI update
+            setRoommateSearches(prev => prev.filter(s => s.id !== searchId));
+            
+            // If this was my search, clear my search ID
+            if (searchId === myRoommateSearchId) {
+                setMyRoommateSearchId(null);
+                localStorage.removeItem('my-roommate-search');
+                localStorage.removeItem('dorm-swap-roommate-id');
+            }
+            
+            // Delete from Firestore
+            await deleteRoommateSearch(searchId);
+            addNotification({
+                userId: currentUser?.id || 'guest',
+                type: 'system',
+                title: 'Arama Silindi',
+                message: 'Oda arkadaşı aramanız başarıyla silindi.',
+                read: false
+            });
+        } catch (error) {
+            console.error("Failed to delete roommate search:", error);
+            alert("Arama silinemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.");
+            const fresh = await getRoommateSearches();
+            setRoommateSearches(fresh);
+        }
+    }, [myRoommateSearchId, currentUser, addNotification]);
 
     // Periodically refresh roommate searches while on roommate view to reflect others' submissions
     useEffect(() => {
@@ -309,35 +434,6 @@ export default function App() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [lastScrollY]);
 
-    // Bildirim fonksiyonları
-    const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
-        const newNotification: Notification = {
-            ...notification,
-            id: `notification-${Date.now()}`,
-            timestamp: new Date().toISOString()
-        };
-        setNotifications(prev => [newNotification, ...prev]);
-        
-        // localStorage'a kaydet
-        try {
-            const saved = JSON.parse(localStorage.getItem('notifications') || '[]');
-            localStorage.setItem('notifications', JSON.stringify([newNotification, ...saved]));
-        } catch {}
-    }, []);
-
-    const markNotificationAsRead = useCallback((notificationId: string) => {
-        setNotifications(prev => 
-            prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-        );
-    }, []);
-
-    const markAllNotificationsAsRead = useCallback(() => {
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    }, []);
-
-    const deleteNotification = useCallback((notificationId: string) => {
-        setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    }, []);
 
     // Analitik verilerini güncelle
     const updateAnalytics = useCallback(() => {
@@ -419,15 +515,50 @@ export default function App() {
     const renderView = () => {
         switch (currentView) {
             case 'my-listing':
-                return <MyListingPage onAddListing={addOrUpdateListing} myListing={myListing} allListings={listings} myListingId={myListingId} onDeleteListing={deleteListingHandler} />;
+                return (
+                    <MyListingPage 
+                        onAddListing={addOrUpdateListing} 
+                        myListing={myListing} 
+                        allListings={listings} 
+                        myListingId={myListingId} 
+                        onDeleteListing={deleteListingHandler}
+                        openFormInitially={openListingForm}
+                    />
+                );
             case 'explore':
-                return <ExplorePage listings={listings} myListingId={myListingId} onDeleteListing={deleteListingHandler} onCreateRequest={() => setCurrentView('my-listing')} />;
+                return (
+                    <ExplorePage 
+                        listings={listings} 
+                        myListingId={myListingId} 
+                        onDeleteListing={deleteListingHandler} 
+                        onCreateRequest={() => {
+                            setOpenListingForm(true);
+                            setCurrentView('my-listing');
+                        }} 
+                    />
+                );
             case 'roommate':
-                return <RoommatePage roommateSearches={roommateSearches} onAddRoommateSearch={addOrUpdateRoommateSearch} myRoommateSearchId={myRoommateSearchId} />;
+                return (
+                    <RoommatePage 
+                        roommateSearches={roommateSearches} 
+                        onAddRoommateSearch={addOrUpdateRoommateSearch} 
+                        onDeleteRoommateSearch={deleteRoommateSearchHandler}
+                        myRoommateSearchId={myRoommateSearchId} 
+                    />
+                );
             case 'analytics':
                 return <AnalyticsDashboard analytics={analytics} userStats={userStats} />;
             default:
-                return <MyListingPage onAddListing={addOrUpdateListing} myListing={myListing} allListings={listings} myListingId={myListingId} onDeleteListing={deleteListingHandler} />;
+                return (
+                    <MyListingPage 
+                        onAddListing={addOrUpdateListing} 
+                        myListing={myListing} 
+                        allListings={listings} 
+                        myListingId={myListingId} 
+                        onDeleteListing={deleteListingHandler}
+                        openFormInitially={openListingForm}
+                    />
+                );
         }
     };
 
@@ -442,32 +573,52 @@ export default function App() {
                         <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
                            <NavButton
                                isActive={currentView === 'my-listing'}
-                               onClick={() => setCurrentView('my-listing')}
+                               onClick={() => {
+                                   setOpenListingForm(false);
+                                   setCurrentView('my-listing');
+                               }}
                                icon={<SwapIcon className="w-5 h-5" />}
                                label="Eşleşmelerim"
                            />
                            <NavButton
                                isActive={currentView === 'explore'}
-                               onClick={() => setCurrentView('explore')}
+                               onClick={() => {
+                                   setOpenListingForm(false);
+                                   setCurrentView('explore');
+                               }}
                                icon={<SearchIcon className="w-5 h-5" />}
                                label="Keşfet"
                            />
                            <NavButton
                                isActive={currentView === 'roommate'}
-                               onClick={() => setCurrentView('roommate')}
+                               onClick={() => {
+                                   setOpenListingForm(false);
+                                   setCurrentView('roommate');
+                               }}
                                icon={<UserGroupIcon className="w-5 h-5" />}
                                label="Oda Arkadaşını Bul"
                            />
                            <NavButton
                                isActive={currentView === 'analytics'}
-                               onClick={() => setCurrentView('analytics')}
+                               onClick={() => {
+                                   setOpenListingForm(false);
+                                   setCurrentView('analytics');
+                               }}
                                icon={<ChartBarIcon className="w-5 h-5" />}
                                label="İstatistikler"
                            />
                         </div>
                         
+                        {/* %100 Ücretsiz Rozeti */}
+                        <div className="ml-3 hidden md:flex items-center">
+                            <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1.5 rounded-full border border-emerald-300 flex items-center gap-1.5 shadow-sm">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                %100 Ücretsiz
+                            </span>
+                        </div>
+
                         {/* Bildirim Merkezi */}
-                        <div className="ml-4">
+                        <div className="ml-3">
                             <NotificationCenter
                                 notifications={notifications}
                                 onMarkAsRead={markNotificationAsRead}
@@ -479,17 +630,36 @@ export default function App() {
 
                     {/* Mobile Layout */}
                     <div className="sm:hidden space-y-3">
+                        <div className="flex items-center justify-between px-1">
+                            <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full border border-emerald-300 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                %100 Ücretsiz
+                            </span>
+                            <NotificationCenter
+                                notifications={notifications}
+                                onMarkAsRead={markNotificationAsRead}
+                                onMarkAllAsRead={markAllNotificationsAsRead}
+                                onDeleteNotification={deleteNotification}
+                            />
+                        </div>
+
                         {/* Üst sıra - Ana kategoriler */}
                         <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
                            <NavButton
                                isActive={currentView === 'my-listing'}
-                               onClick={() => setCurrentView('my-listing')}
+                               onClick={() => {
+                                   setOpenListingForm(false);
+                                   setCurrentView('my-listing');
+                               }}
                                icon={<SwapIcon className="w-4 h-4" />}
                                label="Eşleşmelerim"
                            />
                            <NavButton
                                isActive={currentView === 'explore'}
-                               onClick={() => setCurrentView('explore')}
+                               onClick={() => {
+                                   setOpenListingForm(false);
+                                   setCurrentView('explore');
+                               }}
                                icon={<SearchIcon className="w-4 h-4" />}
                                label="Keşfet"
                            />
@@ -499,26 +669,22 @@ export default function App() {
                         <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
                            <NavButton
                                isActive={currentView === 'roommate'}
-                               onClick={() => setCurrentView('roommate')}
+                               onClick={() => {
+                                   setOpenListingForm(false);
+                                   setCurrentView('roommate');
+                               }}
                                icon={<UserGroupIcon className="w-4 h-4" />}
                                label="Oda Arkadaşı"
                            />
                            <NavButton
                                isActive={currentView === 'analytics'}
-                               onClick={() => setCurrentView('analytics')}
+                               onClick={() => {
+                                   setOpenListingForm(false);
+                                   setCurrentView('analytics');
+                               }}
                                icon={<ChartBarIcon className="w-4 h-4" />}
                                label="İstatistikler"
                            />
-                        </div>
-                        
-                        {/* Mobil bildirim */}
-                        <div className="flex items-center justify-end">
-                            <NotificationCenter
-                                notifications={notifications}
-                                onMarkAsRead={markNotificationAsRead}
-                                onMarkAllAsRead={markAllNotificationsAsRead}
-                                onDeleteNotification={deleteNotification}
-                            />
                         </div>
                     </div>
                 </nav>

@@ -46,7 +46,7 @@ export const saveListing = async (listing: Listing): Promise<void> => {
         console.log('Saving listing to Firestore:', listing);
         
         // Firestore için veriyi temizle - undefined değerleri kaldır
-        const cleanedListing = {
+        const cleanedListing: Record<string, any> = {
             id: listing.id,
             contactInfo: listing.contactInfo,
             currentDorm: listing.currentDorm,
@@ -62,6 +62,9 @@ export const saveListing = async (listing: Listing): Promise<void> => {
                 }
             })
         };
+        if (listing.userId) {
+            cleanedListing.userId = listing.userId;
+        }
         
         // Boş string'leri ve undefined değerleri temizle
         const finalListing = Object.fromEntries(
@@ -102,7 +105,7 @@ export const saveRoommateSearch = async (search: RoommateSearch): Promise<void> 
         console.log('Saving roommate search to Firestore:', search);
         
         // Firestore için veriyi temizle
-        const cleanedSearch = {
+        const cleanedSearch: Record<string, any> = {
             id: search.id,
             name: search.name,
             contactInfo: search.contactInfo,
@@ -111,6 +114,9 @@ export const saveRoommateSearch = async (search: RoommateSearch): Promise<void> 
             roomNumber: search.roomNumber,
             createdAt: search.createdAt
         };
+        if (search.userId) {
+            cleanedSearch.userId = search.userId;
+        }
         
         // Boş string'leri ve undefined değerleri temizle
         const finalSearch = Object.fromEntries(
@@ -140,6 +146,17 @@ export const deleteListing = async (listingId: string): Promise<void> => {
         await deleteDoc(listingDocRef);
     } catch (error) {
         console.error("Error deleting listing: ", error);
+        throw error;
+    }
+};
+
+export const deleteRoommateSearch = async (searchId: string): Promise<void> => {
+    try {
+        const searchDocRef = doc(db, 'roommate_searches', searchId);
+        await deleteDoc(searchDocRef);
+        console.log('Roommate search deleted successfully from Firestore');
+    } catch (error) {
+        console.error("Error deleting roommate search: ", error);
         throw error;
     }
 };

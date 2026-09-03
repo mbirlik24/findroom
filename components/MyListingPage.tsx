@@ -11,6 +11,7 @@ interface MyListingPageProps {
   allListings: Listing[];
   myListingId: string | null;
   onDeleteListing?: (listingId: string) => void;
+  openFormInitially?: boolean;
 }
 
 const initialCurrentDorm: SpecificDormInfo = {
@@ -72,16 +73,33 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
   myListing, 
   allListings, 
   myListingId,
-  onDeleteListing
+  onDeleteListing,
+  openFormInitially = false
 }) => {
   const [currentDorm, setCurrentDorm] = useState<SpecificDormInfo>(myListing?.currentDorm ?? initialCurrentDorm);
   const [desiredDorm, setDesiredDorm] = useState<DesiredDormInfo>(myListing?.desiredDorm ?? initialDesiredDorm);
   const [currentDormDetails, setCurrentDormDetails] = useState(myListing?.currentDormDetails ?? '');
   const [optionalRoomDetails, setOptionalRoomDetails] = useState<OptionalRoomDetails>(myListing?.optionalRoomDetails ?? initialOptionalRoomDetails);
   const [contactInfo, setContactInfo] = useState(myListing?.contactInfo ?? '');
-  const [showForm, setShowForm] = useState(!myListing);
+  const [showForm, setShowForm] = useState(!myListing || openFormInitially);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRoomDetails, setShowRoomDetails] = useState(false);
+
+  React.useEffect(() => {
+    if (openFormInitially) {
+      setShowForm(true);
+    }
+  }, [openFormInitially]);
+
+  React.useEffect(() => {
+    if (myListing) {
+      setCurrentDorm(myListing.currentDorm);
+      setDesiredDorm(myListing.desiredDorm);
+      setCurrentDormDetails(myListing.currentDormDetails || '');
+      setOptionalRoomDetails(myListing.optionalRoomDetails || initialOptionalRoomDetails);
+      setContactInfo(myListing.contactInfo || '');
+    }
+  }, [myListing]);
 
   const handleCurrentDormChange = (field: any, value: any) => {
     setCurrentDorm(prev => ({ ...prev, [field]: value }));
@@ -156,15 +174,14 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Sistem Güncellemesi Bilgilendirmesi */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+      {/* Bilgilendirme */}
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
         <div className="flex items-start">
-          <ExclamationTriangleIcon className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+          <div className="w-5 h-5 text-indigo-600 mt-0.5 mr-3 flex-shrink-0">💡</div>
           <div>
-            <h3 className="text-sm font-medium text-blue-800 mb-1">Sistem Güncellemesi</h3>
-            <p className="text-sm text-blue-700">
-              <strong>Talebiniz burada görünmüyorsa şu an endişe etmeyin, Keşfet'te var.</strong> 
-              İsterseniz tekrar oluşturun ve eşleşmeleri görün. Sistem güncellemesi için özür dileriz.
+            <h3 className="text-sm font-medium text-indigo-900 mb-1">Yurt Değişim Rehberi</h3>
+            <p className="text-sm text-indigo-700">
+              Mevcut yurt bilgilerinizi ve geçmek istediğiniz oda kriterlerini girerek talebinizi oluşturun. Sistem, istekleri karşılıklı olarak uyuşan öğrencileri aşağıda <strong>Eşleşmelerim</strong> bölümünde otomatik olarak listeler.
             </p>
           </div>
         </div>

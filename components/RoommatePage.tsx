@@ -6,6 +6,7 @@ import { FaEdit, FaTimes, FaCheck, FaSpinner } from 'react-icons/fa';
 interface RoommatePageProps {
   roommateSearches: RoommateSearch[];
   onAddRoommateSearch: (search: RoommateSearch) => Promise<void>;
+  onDeleteRoommateSearch?: (searchId: string) => void;
   myRoommateSearchId: string | null;
 }
 
@@ -15,6 +16,7 @@ const MAIN_BUILDINGS = ['Henry Ford A', 'Henry Ford B', ...Array.from({ length: 
 export const RoommatePage: React.FC<RoommatePageProps> = ({ 
   roommateSearches, 
   onAddRoommateSearch, 
+  onDeleteRoommateSearch,
   myRoommateSearchId 
 }) => {
   const [formData, setFormData] = useState<RoommateSearchForm>({
@@ -103,15 +105,14 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Sistem Güncellemesi Bilgilendirmesi */}
-      <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+      {/* Bilgilendirme */}
+      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
         <div className="flex items-start">
-          <div className="w-5 h-5 text-orange-600 mt-0.5 mr-3 flex-shrink-0">⚠️</div>
+          <div className="w-5 h-5 text-indigo-600 mt-0.5 mr-3 flex-shrink-0">💡</div>
           <div>
-            <h3 className="text-sm font-medium text-orange-800 mb-1">Sistem Güncellemesi</h3>
-            <p className="text-sm text-orange-700">
-              <strong>Eğer daha önce oda arkadaşı araması yaptıysanız bu silinmedi.</strong> 
-              Sadece sistem güncellemesi yüzünden sizin sayfanızdan gitti. İsterseniz tekrar oluşturun.
+            <h3 className="text-sm font-medium text-indigo-900 mb-1">Oda Arkadaşı Bulma Rehberi</h3>
+            <p className="text-sm text-indigo-700">
+              Aynı kampüs, bina ve oda numarasına sahip diğer öğrencilerle otomatik olarak eşleşirsiniz. Arama oluşturduktan sonra eşleşen oda arkadaşlarınız bu sayfada listelenir.
             </p>
           </div>
         </div>
@@ -225,13 +226,28 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
               <UserGroupIcon className="w-5 h-5 text-indigo-600 mr-2"/>
               <h2 className="text-lg font-bold text-gray-900">Aramam</h2>
             </div>
-            <button 
-              onClick={() => setShowForm(true)} 
-              className="px-2 py-1 text-xs bg-indigo-600 text-white font-medium rounded hover:bg-indigo-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-indigo-500 flex items-center gap-1"
-            >
-              <FaEdit size={12} />
-              Düzenle
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setShowForm(true)} 
+                className="px-2.5 py-1 text-xs bg-indigo-600 text-white font-medium rounded hover:bg-indigo-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-indigo-500 flex items-center gap-1 transition-colors"
+              >
+                <FaEdit size={12} />
+                Düzenle
+              </button>
+              {onDeleteRoommateSearch && (
+                <button
+                  onClick={() => {
+                    if (window.confirm('Oda arkadaşı aramanızı silmek istediğinizden emin misiniz?')) {
+                      onDeleteRoommateSearch(myRoommateSearch.id);
+                    }
+                  }}
+                  className="px-2.5 py-1 text-xs bg-red-600 text-white font-medium rounded hover:bg-red-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-red-500 flex items-center gap-1 transition-colors"
+                >
+                  <FaTimes size={12} />
+                  Aramayı Sil
+                </button>
+              )}
+            </div>
           </div>
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

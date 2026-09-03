@@ -58,6 +58,7 @@ export interface OptionalRoomDetails {
 // The main data structure for a swap listing
 export interface Listing {
   id: string;
+  userId?: string;
   contactInfo: string;
   currentDorm: SpecificDormInfo;
   currentDormDetails: string;
@@ -71,6 +72,7 @@ export type FilterCriteria = DesiredDormInfo;
 // Roommate search specific types
 export interface RoommateSearch {
   id: string;
+  userId?: string;
   name: string;
   contactInfo: string;
   campus: Campus;
