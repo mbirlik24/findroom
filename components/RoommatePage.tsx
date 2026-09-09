@@ -238,6 +238,16 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
               <h2 className="text-lg font-bold text-gray-900">Aramam</h2>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const text = `Selam! FindRoom'da oda arkadaşı arıyorum.\n\n📍 Kampüs/Oda: ${myRoommateSearch.campus} - ${myRoommateSearch.building} Binası, Oda ${myRoommateSearch.roomNumber}\n\nOda arkadaşım olmak veya bakmak için: https://www.kudorm.com`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                }}
+                className="px-2.5 py-1 text-xs bg-emerald-600 text-white font-medium rounded hover:bg-emerald-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-emerald-500 flex items-center gap-1 transition-colors"
+                title="WhatsApp gruplarında paylaş"
+              >
+                <span>WhatsApp'ta Paylaş</span>
+              </button>
               <button 
                 onClick={() => setShowForm(true)} 
                 className="px-2.5 py-1 text-xs bg-indigo-600 text-white font-medium rounded hover:bg-indigo-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-indigo-500 flex items-center gap-1 transition-colors"

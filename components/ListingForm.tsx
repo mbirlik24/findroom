@@ -95,15 +95,40 @@ export const ListingForm: React.FC<ListingFormProps> = ({ onAddListing, myListin
     }
   };
   
-  const FormSuccess = () => (
-      <div className="text-center p-6 sm:p-8 bg-white rounded-xl shadow-sm border border-gray-200">
-        <h2 className="text-xl sm:text-2xl font-bold text-green-600 mb-3 sm:mb-4">Talebiniz {myListing ? 'Güncellendi' : 'Oluşturuldu'}!</h2>
-        <p className="text-sm sm:text-base text-gray-600 px-2">Artık "Keşfet" sayfasından diğer ilanlara göz atabilir veya "Eşleşmelerim" sayfasından size uygun kişileri görebilirsiniz.</p>
-        <button onClick={() => setShowForm(true)} className="mt-4 sm:mt-6 px-4 sm:px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm sm:text-base">
-          Talebi Düzenle
-        </button>
+  const FormSuccess = () => {
+    const handleShareWhatsApp = () => {
+      const cur = `${currentDorm.campus} ${currentDorm.capacity}`;
+      const des = desiredDorm.capacity === 'multiple' 
+        ? desiredDorm.preferredCapacities?.join('/') 
+        : (desiredDorm.capacity === 'any' ? 'fark etmez' : desiredDorm.capacity);
+      const text = `Selamlar! FindRoom'da yurt takas talebi oluşturdum.\n\n📍 Mevcut: ${cur}\n🎯 Aradığım: ${des}\n\nEşleşmek veya detaylara bakmak için: https://www.kudorm.com`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    };
+
+    return (
+      <div className="text-center p-6 sm:p-8 bg-white rounded-xl shadow-sm border border-gray-200 space-y-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-green-600">Talebiniz {myListing ? 'Güncellendi' : 'Oluşturuldu'}!</h2>
+        <p className="text-sm sm:text-base text-gray-600 max-w-lg mx-auto">
+          Talebiniz yayına alındı. Takas yapacak kişiyi çok daha hızlı bulmak için talebinizi yurt veya dönem WhatsApp gruplarında tek tıkla paylaşabilirsiniz:
+        </p>
+        
+        <div className="pt-2 flex flex-col sm:flex-row justify-center items-center gap-3">
+          <button
+            onClick={handleShareWhatsApp}
+            className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-sm transition-all shadow-sm flex items-center justify-center gap-2"
+          >
+            <span>WhatsApp Gruplarında Paylaş</span>
+          </button>
+          <button 
+            onClick={() => setShowForm(true)} 
+            className="w-full sm:w-auto px-5 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 font-medium rounded-lg text-sm transition-colors"
+          >
+            Talebi Düzenle
+          </button>
+        </div>
       </div>
-  )
+    );
+  };
 
   if (!showForm) {
       return <FormSuccess />;

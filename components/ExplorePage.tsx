@@ -49,15 +49,42 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ listings, myListingId,
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Talep Oluştur Butonu - Sola hizalı ve daha kompakt */}
-      <div className="flex justify-start">
+      {/* Talebi Olmayan Ziyaretçiler İçin Sade Yönlendirme */}
+      {!myListingId && (
+        <div className="bg-white border border-indigo-100/90 rounded-xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="space-y-1">
+            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
+              Uygun bir yurt talebi bulamadınız mı?
+            </h3>
+            <p className="text-xs sm:text-sm text-gray-500 max-w-xl">
+              Kendi talebinizi oluşturun; odanıza geçmek isteyen öğrenciler doğrudan sizinle iletişime geçsin.
+            </p>
+          </div>
+          <button
+            onClick={onCreateRequest}
+            className="whitespace-nowrap px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-medium rounded-lg text-xs sm:text-sm transition-all shadow-xs flex items-center gap-1.5 flex-shrink-0"
+          >
+            <PlusCircleIcon className="w-4 h-4" />
+            <span>Talep Oluştur</span>
+          </button>
+        </div>
+      )}
+
+      {/* Talep Butonu ve Not */}
+      <div className="flex justify-between items-center">
         <button
           onClick={onCreateRequest}
           className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-xs"
         >
           <PlusCircleIcon className="w-4 h-4" />
-          <span>Talep Oluştur</span>
+          <span>{myListingId ? 'Talebimi Düzenle' : 'Talep Oluştur'}</span>
         </button>
+
+        {!myListingId && (
+          <span className="text-xs text-gray-500 hidden sm:inline">
+            İsim zorunlu değildir, talebiniz anında yayınlanır.
+          </span>
+        )}
       </div>
 
       <FilterPanel filters={filters} onFilterChange={handleFilterChange} onReset={resetFilters}/>
@@ -71,6 +98,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ listings, myListingId,
               emphasizeDescription={true}
               isOwnListing={listing.id === myListingId}
               onDeleteListing={onDeleteListing}
+              onCreateRequest={!myListingId ? onCreateRequest : undefined}
             />
           ))}
         </div>

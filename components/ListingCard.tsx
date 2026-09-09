@@ -10,6 +10,7 @@ interface ListingCardProps {
   emphasizeDescription?: boolean;
   isOwnListing?: boolean;
   onDeleteListing?: (listingId: string) => void;
+  onCreateRequest?: () => void;
 }
 
 // Pastel renk paleti - her ilan için farklı renk
@@ -35,27 +36,53 @@ const getPastelColor = (id: string) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-export const ListingCard: React.FC<ListingCardProps> = ({ listing, emphasizeDescription = false, isOwnListing = false, onDeleteListing }) => {
+export const ListingCard: React.FC<ListingCardProps> = ({ 
+  listing, 
+  emphasizeDescription = false, 
+  isOwnListing = false, 
+  onDeleteListing,
+  onCreateRequest 
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const pastelColor = getPastelColor(listing.id);
+  const handleShareWhatsApp = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const cur = `${listing.currentDorm.campus} ${listing.currentDorm.capacity}`;
+    const des = listing.desiredDorm.capacity === 'multiple' 
+      ? listing.desiredDorm.preferredCapacities?.join('/') 
+      : (listing.desiredDorm.capacity === 'any' ? 'fark etmez' : listing.desiredDorm.capacity);
+    const text = `Selam! FindRoom'da yurt takas ilanı açtım.\n\n📍 Mevcut: ${cur}\n🎯 Aradığım: ${des}\n\nEşleşmek veya detaylara bakmak için: https://www.kudorm.com`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
 
   return (
     <div className={`${pastelColor} rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg border-2 ${isOwnListing ? 'ring-2 ring-indigo-300' : ''}`}>
       {isOwnListing && (
-        <div className="bg-indigo-600 text-white px-4 py-2 flex items-center justify-between">
-          <span className="font-semibold text-sm">Sizin talebiniz</span>
-          {onDeleteListing && (
+        <div className="bg-indigo-600 text-white px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-xs sm:text-sm">Sizin talebiniz</span>
+          </div>
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                if (window.confirm('Talebinizi silmek istediğinizden emin misiniz?')) {
-                  onDeleteListing(listing.id);
-                }
-              }}
-              className="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-1 rounded transition-colors duration-200"
+              onClick={handleShareWhatsApp}
+              className="inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold px-2.5 py-1 rounded transition-colors shadow-xs"
+              title="WhatsApp gruplarında paylaş"
             >
-              Talebi Sil
+              <span>WhatsApp'ta Paylaş</span>
             </button>
-          )}
+            {onDeleteListing && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Talebinizi silmek istediğinizden emin misiniz?')) {
+                    onDeleteListing(listing.id);
+                  }
+                }}
+                className="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-2.5 py-1 rounded transition-colors duration-200"
+              >
+                Sil
+              </button>
+            )}
+          </div>
         </div>
       )}
       <div className="p-4 sm:p-6">
@@ -122,6 +149,22 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, emphasizeDesc
                 <h4 className="font-semibold text-gray-700 text-sm sm:text-base mb-2">İletişim Adresi</h4>
                 <ContactDisplay contactInfo={listing.contactInfo} />
             </div>
+
+            {/* Talebi olmayan kullanıcıya sade yönlendirme */}
+            {!isOwnListing && onCreateRequest && (
+              <div className="p-3 bg-gray-50 border border-gray-200/70 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <p className="text-xs text-gray-600">
+                  Kendi talebinizi oluşturarak aradığınız odaya daha hızlı ulaşabilirsiniz.
+                </p>
+                <button
+                  onClick={onCreateRequest}
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline whitespace-nowrap"
+                >
+                  Talep Oluştur →
+                </button>
+              </div>
+            )}
+
             <p className="text-xs text-gray-400 text-right pt-2">
                 İlan Tarihi: {new Date(listing.createdAt).toLocaleDateString('tr-TR')}
             </p>
