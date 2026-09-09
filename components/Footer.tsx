@@ -7,48 +7,49 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onOpenLegal }) => {
   return (
-    <footer className="mt-auto w-full py-6 pb-28 sm:pb-8 text-center text-xs text-gray-500 border-t border-gray-200 bg-white/80 backdrop-blur-xs">
-      <div className="container mx-auto px-4 max-w-2xl space-y-3.5">
-        {/* Yasal Belgeler & Bağlantılar */}
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-gray-600">
+    <footer className="mt-auto w-full py-8 pb-28 sm:pb-8 text-center border-t border-gray-100 bg-white/40">
+      <div className="container mx-auto px-4 max-w-xl space-y-2.5">
+        {/* Aşırı Sade Yasal Belgeler Listesi - Emojisiz, Minimalist */}
+        <nav className="flex flex-wrap items-center justify-center gap-x-3 sm:gap-x-4 gap-y-1.5 text-xs text-gray-500 font-normal">
           <button
             onClick={() => onOpenLegal('terms')}
-            className="hover:text-indigo-600 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
+            className="hover:text-gray-900 transition-colors cursor-pointer"
           >
-            <span>📄</span>
-            <span>Kullanıcı Sözleşmesi</span>
+            Kullanıcı Sözleşmesi
           </button>
+          <span className="text-gray-300 select-none">·</span>
           <button
             onClick={() => onOpenLegal('privacy')}
-            className="hover:text-indigo-600 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
+            className="hover:text-gray-900 transition-colors cursor-pointer"
           >
-            <span>🔒</span>
-            <span>Gizlilik Politikası</span>
+            Gizlilik Politikası
           </button>
+          <span className="text-gray-300 select-none">·</span>
+          <button
+            onClick={() => onOpenLegal('security')}
+            className="hover:text-gray-900 transition-colors cursor-pointer"
+          >
+            Veri Güvenliği
+          </button>
+          <span className="text-gray-300 select-none">·</span>
           <button
             onClick={() => onOpenLegal('kvkk')}
-            className="hover:text-indigo-600 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
+            className="hover:text-gray-900 transition-colors cursor-pointer"
           >
-            <span>📋</span>
-            <span>KVKK Aydınlatma Metni</span>
+            KVKK Metni
           </button>
+          <span className="text-gray-300 select-none">·</span>
           <button
             onClick={() => onOpenLegal('disclaimer')}
-            className="hover:text-indigo-600 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
+            className="hover:text-gray-900 transition-colors cursor-pointer"
           >
-            <span>⚖️</span>
-            <span>Sorumluluk Reddi</span>
+            Sorumluluk Reddi
           </button>
-        </div>
+        </nav>
 
-        {/* Veri Güvencesi Notu (Footera Yaslı) */}
-        <div className="px-4 py-2 bg-gray-50 border border-gray-200/80 rounded-lg text-[11px] text-gray-500 leading-relaxed text-center">
-          <span className="font-semibold text-gray-700">🔒 Veri Güvencesi:</span> Paylaşılan oda ve iletişim bilgileri yalnızca eşleşme amacıyla geçici olarak işlenir; ticari amaçla tutulmaz ve ilanınız silindiğinde kalıcı olarak imha edilir.
-        </div>
-
-        {/* Telif Satırı */}
-        <p className="text-[11px] text-gray-400">
-          © {new Date().getFullYear()} FindRoom • Koç Üniversitesi Öğrenci Platformu
+        {/* Minimal Telif */}
+        <p className="text-[11px] text-gray-400 font-light">
+          © {new Date().getFullYear()} FindRoom
         </p>
       </div>
     </footer>

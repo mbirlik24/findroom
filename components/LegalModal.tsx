@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type LegalTab = 'terms' | 'privacy' | 'kvkk' | 'disclaimer';
+export type LegalTab = 'terms' | 'privacy' | 'security' | 'kvkk' | 'disclaimer';
 
 interface LegalModalProps {
   isOpen: boolean;
@@ -11,7 +11,8 @@ interface LegalModalProps {
 const TABS: { id: LegalTab; label: string }[] = [
   { id: 'terms', label: 'Kullanıcı Sözleşmesi' },
   { id: 'privacy', label: 'Gizlilik Politikası' },
-  { id: 'kvkk', label: 'KVKK Aydınlatma' },
+  { id: 'security', label: 'Veri Güvenliği' },
+  { id: 'kvkk', label: 'KVKK Metni' },
   { id: 'disclaimer', label: 'Sorumluluk Reddi' },
 ];
 
@@ -160,6 +161,49 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, initial
                   <h4 className="font-semibold text-gray-900 mb-1">3. Verilerin Kalıcı Olarak Silinmesi ve İmha</h4>
                   <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
                     Verileriniz kalıcı bir arşivde saklanmaz. İlan sahibi arayüzdeki <strong>&quot;İlanı Sil&quot;</strong> veya <strong>&quot;Aramayı Sil&quot;</strong> butonuna bastığı anda ya da ilgili akademik dönem sona erdiğinde tüm iletişim ve oda verileri sunuculardan ve veri tabanından <strong>anında ve kalıcı olarak</strong> silinir.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+            <div className="space-y-4 sm:space-y-5">
+              <div className="border-b border-gray-100 pb-3">
+                <span className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider">Güvenlik İlkeleri</span>
+                <h3 className="text-base sm:text-lg font-bold text-gray-900">Veri Güvenliği ve Gizlilik Protokolü</h3>
+              </div>
+
+              <p className="text-gray-600">
+                FindRoom, öğrencilerin gizliliğini ve veri güvenliğini korumak üzere tasarlanmış bağımsız bir öğrenci girişimidir. Platformda kullanıcıların güvenliği için aşağıdaki teknik ve idari ilkeler uygulanır:
+              </p>
+
+              <div className="space-y-3">
+                <div className="p-3.5 sm:p-4 rounded-xl bg-gray-50 border border-gray-100">
+                  <h4 className="font-semibold text-gray-900 mb-1">1. Geçici Saklama ve Veri Minimizasyonu</h4>
+                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                    Sistemde yalnızca eşleşme için zorunlu olan oda ve iletişim bilgisi tutulur. T.C. kimlik numarası, şifre, öğrenci numarası veya hassas kişisel veriler asla talep edilmez veya işlenmez.
+                  </p>
+                </div>
+
+                <div className="p-3.5 sm:p-4 rounded-xl bg-gray-50 border border-gray-100">
+                  <h4 className="font-semibold text-gray-900 mb-1">2. Kalıcı İmha İlkesi</h4>
+                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                    İlanınızı veya oda arkadaşı aramanızı sildiğiniz an verileriniz veritabanından kalıcı olarak yok edilir. Ayrıca dönem sonunda eski tüm veriler toplu olarak silinir.
+                  </p>
+                </div>
+
+                <div className="p-3.5 sm:p-4 rounded-xl bg-gray-50 border border-gray-100">
+                  <h4 className="font-semibold text-gray-900 mb-1">3. Şifreli İletim (SSL / HTTPS)</h4>
+                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                    Platform üzerindeki tüm veri transferi HTTPS / TLS şifreleme protokolü üzerinden gerçekleştirilir. Veritabanı altyapısı güvenli Firebase altyapısında barındırılır.
+                  </p>
+                </div>
+
+                <div className="p-3.5 sm:p-4 rounded-xl bg-gray-50 border border-gray-100">
+                  <h4 className="font-semibold text-gray-900 mb-1">4. Ticari Olmayan Bağımsız Yapı</h4>
+                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                    Verileriniz reklam verenlerle, üçüncü şahıslarla veya kurumlarla kesinlikle paylaşılmaz, satılmaz veya ticarileştirilmez.
                   </p>
                 </div>
               </div>
