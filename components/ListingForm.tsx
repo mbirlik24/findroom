@@ -72,10 +72,6 @@ export const ListingForm: React.FC<ListingFormProps> = ({ onAddListing, myListin
       alert('Lütfen iletişim bilgisi girin.');
       return;
     }
-    if (!acceptedTerms) {
-      alert('Lütfen Kullanıcı Sözleşmesi ve Gizlilik Politikası onay kutusunu işaretleyin.');
-      return;
-    }
 
     setIsSubmitting(true);
     const newListing: Listing = {
@@ -207,45 +203,6 @@ export const ListingForm: React.FC<ListingFormProps> = ({ onAddListing, myListin
             placeholder="Örn: Instagram: @kullaniciadi, Tel veya E-posta"
             required
           />
-        </div>
-
-        {/* Legal Consent Checkbox */}
-        <div className="pt-3 border-t border-purple-200">
-          <label className="flex items-start cursor-pointer text-xs sm:text-sm text-purple-900 select-none">
-            <input
-              type="checkbox"
-              checked={acceptedTerms}
-              onChange={(e) => setAcceptedTerms(e.target.checked)}
-              className="mt-0.5 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded flex-shrink-0"
-              required
-            />
-            <span className="ml-2 leading-snug">
-              <button
-                type="button"
-                onClick={() => onOpenLegal?.('terms')}
-                className="text-indigo-700 font-semibold underline hover:text-indigo-900"
-              >
-                Kullanıcı Sözleşmesi
-              </button>
-              {', '}
-              <button
-                type="button"
-                onClick={() => onOpenLegal?.('privacy')}
-                className="text-indigo-700 font-semibold underline hover:text-indigo-900"
-              >
-                Gizlilik Politikası
-              </button>
-              {' ve '}
-              <button
-                type="button"
-                onClick={() => onOpenLegal?.('disclaimer')}
-                className="text-indigo-700 font-semibold underline hover:text-indigo-900"
-              >
-                Sorumluluk Reddi
-              </button>
-              'ni okudum. İletişim ve oda bilgilerimin platformda diğer kullanıcılar tarafından görülecek şekilde yayınlanmasını kendi rızamla onaylıyorum.
-            </span>
-          </label>
         </div>
       </div>
 

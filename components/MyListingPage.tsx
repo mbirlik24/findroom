@@ -103,10 +103,6 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
       alert('Lütfen iletişim bilgisi girin.');
       return;
     }
-    if (!acceptedTerms) {
-      alert('Lütfen Kullanıcı Sözleşmesi ve Gizlilik Politikası onay kutusunu işaretleyin.');
-      return;
-    }
 
     setIsSubmitting(true);
     const newListing: Listing = {
@@ -147,36 +143,11 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
   // Başarım bildirimi göstermiyoruz; kayıttan sonra form kapanır
 
   return (
-    <div className="space-y-8">
-      {/* Bilgilendirme */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
-        <div className="flex items-start">
-          <div className="w-5 h-5 text-indigo-600 mt-0.5 mr-3 flex-shrink-0">💡</div>
-          <div>
-            <h3 className="text-sm font-medium text-indigo-900 mb-1">Yurt Değişim Rehberi</h3>
-            <p className="text-sm text-indigo-700">
-              Mevcut yurt bilgilerinizi ve geçmek istediğiniz oda kriterlerini girerek talebinizi oluşturun. Sistem, istekleri karşılıklı olarak uyuşan öğrencileri aşağıda <strong>Eşleşmelerim</strong> bölümünde otomatik olarak listeler.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Veri Güvencesi & Geçici Saklama */}
-      <div className="bg-white border border-emerald-200/90 rounded-xl p-4 shadow-xs">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-base">
-            🔒
-          </div>
-          <div className="space-y-1">
-            <h4 className="text-xs sm:text-sm font-semibold text-gray-900 flex items-center gap-2">
-              <span>Veri Güvencesi & Geçici Eşleşme İlkesi</span>
-              <span className="text-[10px] font-medium bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">KVKK m.4 Uyumlu</span>
-            </h4>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              Oda ve iletişim bilgileriniz; <strong>yalnızca ilanınız aktif olduğu sürece</strong> eşleşme algoritmasının çalışması ve ilgilenen öğrencilerin sizinle iletişim kurabilmesi amacıyla geçici olarak işlenir. Bilgileriniz ticari amaçla depolanmaz, satılmaz veya profil çıkarılmaz. İlanınızı sildiğinizde veya dönem tamamlandığında tüm kayıtlarınız sistemden <strong>kalıcı olarak imha edilir</strong>.
-            </p>
-          </div>
-        </div>
+    <div className="space-y-6">
+      {/* Kompakt Rehber */}
+      <div className="flex items-center gap-2 px-3.5 py-2 bg-indigo-50/70 border border-indigo-100 rounded-lg text-xs text-indigo-700">
+        <span className="text-sm flex-shrink-0">💡</span>
+        <span>Mevcut ve istediğiniz oda kriterlerini girin; uygun öğrenciler <strong>Eşleşmelerim</strong>'de otomatik listelenir.</span>
       </div>
 
       {/* Talep Oluşturma/Düzenleme Bölümü */}
@@ -279,48 +250,6 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
                   placeholder="Örn: Instagram: @kullaniciadi, Tel veya E-posta"
                   required
                 />
-              </div>
-
-              {/* Legal Consent Checkbox */}
-              <div className="pt-3 border-t border-purple-200">
-                <label className="flex items-start cursor-pointer text-xs sm:text-sm text-purple-900 select-none">
-                  <input
-                    type="checkbox"
-                    checked={acceptedTerms}
-                    onChange={(e) => setAcceptedTerms(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded flex-shrink-0"
-                    required
-                  />
-                  <span className="ml-2 leading-snug">
-                    <button
-                      type="button"
-                      onClick={() => onOpenLegal?.('terms')}
-                      className="text-indigo-700 font-semibold underline hover:text-indigo-900"
-                    >
-                      Kullanıcı Sözleşmesi
-                    </button>
-                    {', '}
-                    <button
-                      type="button"
-                      onClick={() => onOpenLegal?.('privacy')}
-                      className="text-indigo-700 font-semibold underline hover:text-indigo-900"
-                    >
-                      Gizlilik Politikası
-                    </button>
-                    {' ve '}
-                    <button
-                      type="button"
-                      onClick={() => onOpenLegal?.('disclaimer')}
-                      className="text-indigo-700 font-semibold underline hover:text-indigo-900"
-                    >
-                      Sorumluluk Reddi
-                    </button>
-                    'ni okudum. İletişim ve oda bilgilerimin platformda diğer kullanıcılar tarafından görülecek şekilde yayınlanmasını kendi rızamla onaylıyorum.
-                  </span>
-                </label>
-                <p className="text-[11px] text-purple-700/85 mt-2 ml-6 leading-normal">
-                  * Paylaştığınız bilgiler profil çıkarma veya kalıcı arşivleme amacıyla tutulmaz; yalnızca ilanınız yayında kaldığı sürece eşleşme amacıyla geçici işlenir. &quot;İlanı Sil&quot; ile istediğiniz an tüm verilerinizi kalıcı olarak silebilirsiniz.
-                </p>
               </div>
             </div>
 
