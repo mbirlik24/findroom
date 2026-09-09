@@ -1,20 +1,21 @@
-import { collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, getDoc, updateDoc, where, limit } from 'firebase/firestore';
 import { db } from './config';
 import type { Listing, RoommateSearch, RoomStats, RoommateStats, User } from '../types';
 import { Gender, Campus, Capacity } from '../types';
 import { NEW_TERM_START_DATE } from '../constants';
+import { listingsMatch } from '../matching';
 
 const listingsCollectionRef = collection(db, 'listings');
 const roommateCollectionRef = collection(db, 'roommate_searches');
 const usersCollectionRef = collection(db, 'users');
 
-// Firebase bağlantısını test et
+// Firebase bağlantısını test et (Sadece 1 doküman okuyarak kotayı korur)
 export const testFirebaseConnection = async (): Promise<boolean> => {
     try {
         console.log('Testing Firebase connection...');
-        const testQuery = query(listingsCollectionRef, orderBy('createdAt', 'desc'));
+        const testQuery = query(listingsCollectionRef, limit(1));
         const querySnapshot = await getDocs(testQuery);
-        console.log('Firebase connection successful. Found', querySnapshot.docs.length, 'listings');
+        console.log('Firebase connection successful.');
         return true;
     } catch (error) {
         console.error('Firebase connection failed:', error);
@@ -29,14 +30,18 @@ export const testFirebaseConnection = async (): Promise<boolean> => {
 
 export const getListings = async (): Promise<Listing[]> => {
     try {
-        const q = query(listingsCollectionRef, orderBy('createdAt', 'desc'));
+        // Yalnızca yeni döneme ait ilanları Firestore seviyesinde filtrele (368 doküman yerine sadece yenileri çeker)
+        const q = query(
+            listingsCollectionRef,
+            where('createdAt', '>=', NEW_TERM_START_DATE),
+            orderBy('createdAt', 'desc')
+        );
         const querySnapshot = await getDocs(q);
         const listings = querySnapshot.docs
             .map(doc => ({
                 ...(doc.data() as Listing),
                 id: doc.id,
-            }))
-            .filter(l => l.createdAt && l.createdAt >= NEW_TERM_START_DATE);
+            }));
         return listings;
     } catch (error) {
         console.error("Error fetching listings: ", error);
@@ -94,11 +99,15 @@ export const saveListing = async (listing: Listing): Promise<void> => {
 // Roommate Searches (independent from listings)
 export const getRoommateSearches = async (): Promise<RoommateSearch[]> => {
     try {
-        const q = query(roommateCollectionRef, orderBy('createdAt', 'desc'));
+        // Yalnızca yeni döneme ait oda arkadaşı aramalarını çek (368 doküman yerine sadece yeni dönem dokümanları okunur)
+        const q = query(
+            roommateCollectionRef,
+            where('createdAt', '>=', NEW_TERM_START_DATE),
+            orderBy('createdAt', 'desc')
+        );
         const querySnapshot = await getDocs(q);
         return querySnapshot.docs
-            .map(d => ({ ...(d.data() as RoommateSearch), id: d.id }))
-            .filter(s => s.createdAt && s.createdAt >= NEW_TERM_START_DATE);
+            .map(d => ({ ...(d.data() as RoommateSearch), id: d.id }));
     } catch (error) {
         console.error('Error fetching roommate searches:', error);
         return [];
@@ -274,26 +283,11 @@ export const getDormSwapMatches = async (): Promise<{ totalMatches: number; matc
         
         // Eşleşen çiftleri bul
         const matchedPairs = [];
-        const processed = new Set<string>();
-        
         for (let i = 0; i < listings.length; i++) {
-            if (processed.has(listings[i].id)) continue;
-            
             for (let j = i + 1; j < listings.length; j++) {
-                if (processed.has(listings[j].id)) continue;
-                
                 const listing1 = listings[i];
                 const listing2 = listings[j];
-                
-                // Eşleşme kontrolü: birinin istediği diğerinin mevcut yurdu, diğerinin istediği birincinin mevcut yurdu
-                const isMatch = (
-                    listing1.desiredDorm.campus === listing2.currentDorm.campus &&
-                    listing1.desiredDorm.building === listing2.currentDorm.building &&
-                    listing1.desiredDorm.roomNumber === listing2.currentDorm.roomNumber &&
-                    listing2.desiredDorm.campus === listing1.currentDorm.campus &&
-                    listing2.desiredDorm.building === listing1.currentDorm.building &&
-                    listing2.desiredDorm.roomNumber === listing1.currentDorm.roomNumber
-                );
+                const isMatch = listingsMatch(listing1, listing2);
                 
                 if (isMatch) {
                     matchedPairs.push({
@@ -312,9 +306,6 @@ export const getDormSwapMatches = async (): Promise<{ totalMatches: number; matc
                         matchDate: new Date()
                     });
                     
-                    processed.add(listing1.id);
-                    processed.add(listing2.id);
-                    break;
                 }
             }
         }
@@ -414,7 +405,7 @@ export const createOrUpdateUser = async (user: User): Promise<void> => {
         console.log('Saving user to Firestore:', user);
         
         // Firestore için veriyi temizle
-        const cleanedUser = {
+        const cleanedUser: Record<string, any> = {
             id: user.id,
             name: user.name,
             createdAt: user.createdAt,

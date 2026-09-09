@@ -8,6 +8,7 @@ interface RoommatePageProps {
   onAddRoommateSearch: (search: RoommateSearch) => Promise<void>;
   onDeleteRoommateSearch?: (searchId: string) => void;
   myRoommateSearchId: string | null;
+  onOpenLegal?: (tab: 'terms' | 'privacy' | 'kvkk' | 'disclaimer') => void;
 }
 
 const WEST_BUILDINGS = ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B'];
@@ -17,14 +18,17 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
   roommateSearches, 
   onAddRoommateSearch, 
   onDeleteRoommateSearch,
-  myRoommateSearchId 
+  myRoommateSearchId,
+  onOpenLegal
 }) => {
   const [formData, setFormData] = useState<RoommateSearchForm>({
+    name: '',
     campus: '',
     building: '',
     roomNumber: '',
     contactInfo: ''
   });
+  const [acceptedTerms, setAcceptedTerms] = useState(!!myRoommateSearchId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(!myRoommateSearchId);
 
@@ -32,6 +36,19 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
     roommateSearches.find(s => s.id === myRoommateSearchId), 
     [roommateSearches, myRoommateSearchId]
   );
+
+  useEffect(() => {
+    if (myRoommateSearch) {
+      setFormData({
+        name: myRoommateSearch.name || '',
+        campus: myRoommateSearch.campus || '',
+        building: myRoommateSearch.building || '',
+        roomNumber: myRoommateSearch.roomNumber || '',
+        contactInfo: myRoommateSearch.contactInfo || ''
+      });
+      setAcceptedTerms(true);
+    }
+  }, [myRoommateSearch]);
 
   // Find exact room matches
   const roomMatches = useMemo(() => {
@@ -68,6 +85,11 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
     
     if (!formData.name.trim() || !formData.campus || !formData.building || !formData.roomNumber || !formData.contactInfo.trim()) {
       alert('Lütfen tüm alanları doldurun.');
+      return;
+    }
+
+    if (!acceptedTerms) {
+      alert('Lütfen Kullanıcı Sözleşmesi ve Gizlilik Politikası onay kutusunu işaretleyin.');
       return;
     }
 
@@ -193,6 +215,45 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
                   placeholder="Bir iletişim bilgisi giriniz."
                   required
                 />
+              </div>
+
+              {/* Legal Consent Checkbox */}
+              <div className="pt-3 border-t border-gray-200">
+                <label className="flex items-start cursor-pointer text-xs sm:text-sm text-gray-700 select-none">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded flex-shrink-0"
+                    required
+                  />
+                  <span className="ml-2 leading-snug">
+                    <button
+                      type="button"
+                      onClick={() => onOpenLegal?.('terms')}
+                      className="text-indigo-600 font-semibold underline hover:text-indigo-800"
+                    >
+                      Kullanıcı Sözleşmesi
+                    </button>
+                    {', '}
+                    <button
+                      type="button"
+                      onClick={() => onOpenLegal?.('privacy')}
+                      className="text-indigo-600 font-semibold underline hover:text-indigo-800"
+                    >
+                      Gizlilik Politikası
+                    </button>
+                    {' ve '}
+                    <button
+                      type="button"
+                      onClick={() => onOpenLegal?.('disclaimer')}
+                      className="text-indigo-600 font-semibold underline hover:text-indigo-800"
+                    >
+                      Sorumluluk Reddi
+                    </button>
+                    'ni okudum. Ad-soyad ve iletişim bilgilerimin oda arkadaşı arama listesinde görünmesini kendi rızamla onaylıyorum.
+                  </span>
+                </label>
               </div>
             </div>
 

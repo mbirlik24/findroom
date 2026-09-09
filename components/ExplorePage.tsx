@@ -48,15 +48,15 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ listings, myListingId,
   }, [listings, filters]);
 
   return (
-    <div className="space-y-8">
-      {/* Talep Oluştur Butonu - En Üstte */}
+    <div className="space-y-4 sm:space-y-6">
+      {/* Talep Oluştur Butonu - Sola hizalı ve daha kompakt */}
       <div className="flex justify-start">
         <button
           onClick={onCreateRequest}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 shadow-sm"
+          className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-xs"
         >
-          <PlusCircleIcon className="w-5 h-5" />
-          Talep Oluştur
+          <PlusCircleIcon className="w-4 h-4" />
+          <span>Talep Oluştur</span>
         </button>
       </div>
 

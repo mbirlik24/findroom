@@ -5,7 +5,9 @@ import { ExplorePage } from './components/ExplorePage';
 import { RoommatePage } from './components/RoommatePage';
 import { NotificationCenter } from './components/NotificationCenter';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
-import { SwapIcon, PlusCircleIcon, SearchIcon, UserGroupIcon, ChartBarIcon } from './components/icons';
+import { Footer } from './components/Footer';
+import { LegalModal, type LegalTab } from './components/LegalModal';
+import { SwapIcon, SearchIcon, UserGroupIcon, ChartBarIcon } from './components/icons';
 import { getListings, saveListing, deleteListing, getRoommateSearches, saveRoommateSearch, deleteRoommateSearch, createOrUpdateUser, getUser, updateUserLastActive, testFirebaseConnection } from './firebase/firestoreService';
 import { NEW_TERM_START_DATE } from './constants';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
@@ -39,6 +41,13 @@ export default function App() {
     const [isNavbarVisible, setIsNavbarVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+    const [activeLegalTab, setActiveLegalTab] = useState<LegalTab>('terms');
+
+    const handleOpenLegalModal = useCallback((tab: LegalTab = 'terms') => {
+        setActiveLegalTab(tab);
+        setIsLegalModalOpen(true);
+    }, []);
     const [analytics, setAnalytics] = useState<Analytics>({
         totalListings: 0,
         totalUsers: 0,
@@ -127,8 +136,13 @@ export default function App() {
                 await createOrUpdateUser(user);
                 console.log('👤 New user created:', user.name);
             } else {
-                // Mevcut kullanıcının son aktivite zamanını güncelle
-                await updateUserLastActive(userId);
+                // Mevcut kullanıcının son aktivite zamanını güncelle (kotayı korumak için 15 dakikada en fazla 1 kez yazılır)
+                const lastUpdated = localStorage.getItem('last-active-updated-at');
+                const now = Date.now();
+                if (!lastUpdated || now - parseInt(lastUpdated, 10) > 15 * 60 * 1000) {
+                    await updateUserLastActive(userId);
+                    localStorage.setItem('last-active-updated-at', now.toString());
+                }
                 console.log('👤 User loaded:', user.name);
             }
             
@@ -392,34 +406,86 @@ export default function App() {
     useEffect(() => {
         if (currentView !== 'roommate') return;
         let isCancelled = false;
-        const fetchNow = async () => {
+        let lastFetchTime = Date.now();
+
+        const fetchNow = async (force = false) => {
+            // Sekme arka plandaysa kotayı korumak için çekme
+            if (!force && typeof document !== 'undefined' && document.hidden) return;
             try {
                 const fresh = await getRoommateSearches();
-                if (!isCancelled) setRoommateSearches(fresh);
+                if (!isCancelled) {
+                    setRoommateSearches(fresh);
+                    lastFetchTime = Date.now();
+                }
             } catch (e) {
                 console.error('Failed to refresh roommate searches', e);
             }
         };
-        fetchNow();
-        const id = setInterval(fetchNow, 5000);
-        return () => { isCancelled = true; clearInterval(id); };
+
+        fetchNow(true);
+
+        // 60 saniyede bir periyodik kontrol (sadece sekme aktifse)
+        const id = setInterval(() => fetchNow(false), 60000);
+
+        // Kullanıcı başka sekmeden bu sekmeye döndüğünde (en az 30 saniye geçmişse) hemen güncelle
+        const handleVisibilityOrFocus = () => {
+            if (typeof document !== 'undefined' && !document.hidden && Date.now() - lastFetchTime > 30000) {
+                fetchNow(true);
+            }
+        };
+
+        window.addEventListener('focus', handleVisibilityOrFocus);
+        document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
+        return () => { 
+            isCancelled = true; 
+            clearInterval(id); 
+            window.removeEventListener('focus', handleVisibilityOrFocus);
+            document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+        };
     }, [currentView]);
 
     // Periodically refresh listings while on my-listing view to keep matches current
     useEffect(() => {
         if (currentView !== 'my-listing') return;
         let isCancelled = false;
-        const fetchNow = async () => {
+        let lastFetchTime = Date.now();
+
+        const fetchNow = async (force = false) => {
+            // Sekme arka plandaysa kotayı korumak için çekme
+            if (!force && typeof document !== 'undefined' && document.hidden) return;
             try {
                 const fresh = await getListings();
-                if (!isCancelled) setListings(fresh);
+                if (!isCancelled) {
+                    setListings(fresh);
+                    lastFetchTime = Date.now();
+                }
             } catch (e) {
                 console.error('Failed to refresh listings', e);
             }
         };
-        fetchNow();
-        const id = setInterval(fetchNow, 5000);
-        return () => { isCancelled = true; clearInterval(id); };
+
+        fetchNow(true);
+
+        // 60 saniyede bir periyodik kontrol (sadece sekme aktifse)
+        const id = setInterval(() => fetchNow(false), 60000);
+
+        // Kullanıcı bu sekmeye döndüğünde (en az 30 saniye geçmişse) hemen güncelle
+        const handleVisibilityOrFocus = () => {
+            if (typeof document !== 'undefined' && !document.hidden && Date.now() - lastFetchTime > 30000) {
+                fetchNow(true);
+            }
+        };
+
+        window.addEventListener('focus', handleVisibilityOrFocus);
+        document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
+        return () => { 
+            isCancelled = true; 
+            clearInterval(id); 
+            window.removeEventListener('focus', handleVisibilityOrFocus);
+            document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+        };
     }, [currentView]);
 
     // Navbar scroll behavior
@@ -534,6 +600,7 @@ export default function App() {
                         myListingId={myListingId} 
                         onDeleteListing={deleteListingHandler}
                         openFormInitially={openListingForm}
+                        onOpenLegal={handleOpenLegalModal}
                     />
                 );
             case 'explore':
@@ -554,7 +621,8 @@ export default function App() {
                         roommateSearches={roommateSearches} 
                         onAddRoommateSearch={addOrUpdateRoommateSearch} 
                         onDeleteRoommateSearch={deleteRoommateSearchHandler}
-                        myRoommateSearchId={myRoommateSearchId} 
+                        myRoommateSearchId={myRoommateSearchId}
+                        onOpenLegal={handleOpenLegalModal}
                     />
                 );
             case 'analytics':
@@ -568,6 +636,7 @@ export default function App() {
                         myListingId={myListingId} 
                         onDeleteListing={deleteListingHandler}
                         openFormInitially={openListingForm}
+                        onOpenLegal={handleOpenLegalModal}
                     />
                 );
         }
@@ -575,22 +644,19 @@ export default function App() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <header className={`fixed top-0 left-0 right-0 z-10 transition-transform duration-300 ease-in-out ${
-                isNavbarVisible ? 'translate-y-0' : '-translate-y-full'
+            <header className={`fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-xs transition-transform duration-300 ease-in-out ${
+                isNavbarVisible ? 'translate-y-0' : '-translate-y-full sm:translate-y-0'
             }`}>
-                <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3">
                     {/* Desktop Layout */}
-                    <div className="hidden sm:flex items-center justify-center w-full">
-                        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
-                           <NavButton
-                               isActive={currentView === 'my-listing'}
-                               onClick={() => {
-                                   setOpenListingForm(false);
-                                   setCurrentView('my-listing');
-                               }}
-                               icon={<SwapIcon className="w-5 h-5" />}
-                               label="Eşleşmelerim"
-                           />
+                    <div className="hidden sm:flex items-center justify-between w-full">
+                        <div className="flex items-center">
+                            <span className="text-2xl font-light tracking-wider text-black select-none">
+                                Find<span className="font-normal bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">Room</span>
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-1 bg-gray-100/90 p-1 rounded-xl border border-gray-200/70">
                            <NavButton
                                isActive={currentView === 'explore'}
                                onClick={() => {
@@ -599,6 +665,15 @@ export default function App() {
                                }}
                                icon={<SearchIcon className="w-5 h-5" />}
                                label="Keşfet"
+                           />
+                           <NavButton
+                               isActive={currentView === 'my-listing'}
+                               onClick={() => {
+                                   setOpenListingForm(false);
+                                   setCurrentView('my-listing');
+                               }}
+                               icon={<SwapIcon className="w-5 h-5" />}
+                               label="Eşleşmelerim"
                            />
                            <NavButton
                                isActive={currentView === 'roommate'}
@@ -621,7 +696,7 @@ export default function App() {
                         </div>
                         
                         {/* Bildirim Merkezi */}
-                        <div className="ml-3">
+                        <div className="flex items-center">
                             <NotificationCenter
                                 notifications={notifications}
                                 onMarkAsRead={markNotificationAsRead}
@@ -631,71 +706,104 @@ export default function App() {
                         </div>
                     </div>
 
-                    {/* Mobile Layout */}
-                    <div className="sm:hidden space-y-3">
-                        <div className="flex items-center justify-end px-1">
+                    {/* Mobile Layout Top Bar */}
+                    <div className="sm:hidden flex items-center justify-between">
+                        <div className="flex items-center">
+                            <span className="text-xl font-light tracking-wider text-black select-none">
+                                Find<span className="font-normal bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">Room</span>
+                            </span>
+                        </div>
+
+                        <div className="flex items-center">
                             <NotificationCenter
                                 notifications={notifications}
                                 onMarkAsRead={markNotificationAsRead}
                                 onMarkAllAsRead={markAllNotificationsAsRead}
                                 onDeleteNotification={deleteNotification}
                             />
-                        </div>
-
-                        {/* Üst sıra - Ana kategoriler */}
-                        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
-                           <NavButton
-                               isActive={currentView === 'my-listing'}
-                               onClick={() => {
-                                   setOpenListingForm(false);
-                                   setCurrentView('my-listing');
-                               }}
-                               icon={<SwapIcon className="w-4 h-4" />}
-                               label="Eşleşmelerim"
-                           />
-                           <NavButton
-                               isActive={currentView === 'explore'}
-                               onClick={() => {
-                                   setOpenListingForm(false);
-                                   setCurrentView('explore');
-                               }}
-                               icon={<SearchIcon className="w-4 h-4" />}
-                               label="Keşfet"
-                           />
-                        </div>
-                        
-                        {/* Alt sıra - Yeni kategoriler */}
-                        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg">
-                           <NavButton
-                               isActive={currentView === 'roommate'}
-                               onClick={() => {
-                                   setOpenListingForm(false);
-                                   setCurrentView('roommate');
-                               }}
-                               icon={<UserGroupIcon className="w-4 h-4" />}
-                               label="Oda Arkadaşı"
-                           />
-                           <NavButton
-                               isActive={currentView === 'analytics'}
-                               onClick={() => {
-                                   setOpenListingForm(false);
-                                   setCurrentView('analytics');
-                               }}
-                               icon={<ChartBarIcon className="w-4 h-4" />}
-                               label="İstatistikler"
-                           />
                         </div>
                     </div>
                 </nav>
             </header>
-            <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-40">
+
+            {/* Mobile Bottom Navigation Bar (Alt Bar) */}
+            <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] pb-safe">
+                <div className="grid grid-cols-4 gap-1 p-1.5">
+                    <button
+                        onClick={() => {
+                            setOpenListingForm(false);
+                            setCurrentView('explore');
+                        }}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
+                            currentView === 'explore'
+                                ? 'text-indigo-600 font-bold bg-indigo-50/80'
+                                : 'text-gray-500 hover:text-gray-900'
+                        }`}
+                    >
+                        <SearchIcon className="w-5 h-5 mb-0.5" />
+                        <span className="text-[11px] leading-tight font-medium">Keşfet</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setOpenListingForm(false);
+                            setCurrentView('my-listing');
+                        }}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
+                            currentView === 'my-listing'
+                                ? 'text-indigo-600 font-bold bg-indigo-50/80'
+                                : 'text-gray-500 hover:text-gray-900'
+                        }`}
+                    >
+                        <SwapIcon className="w-5 h-5 mb-0.5" />
+                        <span className="text-[11px] leading-tight font-medium">Eşleşmelerim</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setOpenListingForm(false);
+                            setCurrentView('roommate');
+                        }}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
+                            currentView === 'roommate'
+                                ? 'text-indigo-600 font-bold bg-indigo-50/80'
+                                : 'text-gray-500 hover:text-gray-900'
+                        }`}
+                    >
+                        <UserGroupIcon className="w-5 h-5 mb-0.5" />
+                        <span className="text-[11px] leading-tight font-medium">Oda Arkadaşı</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            setOpenListingForm(false);
+                            setCurrentView('analytics');
+                        }}
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
+                            currentView === 'analytics'
+                                ? 'text-indigo-600 font-bold bg-indigo-50/80'
+                                : 'text-gray-500 hover:text-gray-900'
+                        }`}
+                    >
+                        <ChartBarIcon className="w-5 h-5 mb-0.5" />
+                        <span className="text-[11px] leading-tight font-medium">İstatistik</span>
+                    </button>
+                </div>
+            </div>
+
+            <main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-24 sm:pt-24 sm:pb-12 flex-grow">
                 <div className="max-w-4xl mx-auto">
                    {isInitialized ? renderView() : <div className="text-center p-10">Yükleniyor...</div>}
                 </div>
             </main>
             
+            <Footer onOpenLegal={handleOpenLegalModal} />
+            
+            <LegalModal
+                isOpen={isLegalModalOpen}
+                onClose={() => setIsLegalModalOpen(false)}
+                initialTab={activeLegalTab}
+            />
+
             {/* Buy Me a Coffee Button */}
-            <div className="fixed bottom-4 right-4 z-50">
+            <div className="fixed bottom-20 right-3 sm:bottom-4 sm:right-4 z-30">
                 <a
                     href="https://www.buymeacoffee.com/miracbirlik"
                     target="_blank"

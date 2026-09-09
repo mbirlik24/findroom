@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Listing, SpecificDormInfo, DesiredDormInfo, OptionalRoomDetails } from '../types';
 import { Gender, Campus, Capacity } from '../types';
+import { findDormSwapMatches } from '../matching';
 import { DormFieldSet } from './DormFieldSet';
 import { ListingCard } from './ListingCard';
 import { ExclamationTriangleIcon, HeartIcon, PlusCircleIcon } from './icons';
@@ -12,6 +13,7 @@ interface MyListingPageProps {
   myListingId: string | null;
   onDeleteListing?: (listingId: string) => void;
   openFormInitially?: boolean;
+  onOpenLegal?: (tab: 'terms' | 'privacy' | 'kvkk' | 'disclaimer') => void;
 }
 
 const initialCurrentDorm: SpecificDormInfo = {
@@ -43,44 +45,21 @@ const getBuildingOptions = (campus: Campus) => {
 };
 
 
-// Checks if a specific dorm (someone's current) satisfies a desired dorm's criteria
-const specificSatisfiesDesired = (specific: SpecificDormInfo, desired: DesiredDormInfo): boolean => {
-  const genderMatch = desired.gender === 'any' || desired.gender === specific.gender;
-  const campusMatch = desired.campus === 'any' || desired.campus === specific.campus;
-  const bunkBedMatch = desired.bunkBed === 'any' || desired.bunkBed === specific.bunkBed;
-  
-  // For capacity, handle the new 'multiple' option with specific preferences
-  let capacityMatch = false;
-  if (desired.capacity === 'any') {
-    capacityMatch = true;
-  } else if (desired.capacity === 'multiple') {
-    // Check if the specific dorm's capacity is in the preferred capacities
-    if (desired.preferredCapacities && desired.preferredCapacities.length > 0) {
-      capacityMatch = desired.preferredCapacities.includes(specific.capacity);
-    } else {
-      // If no specific preferences selected, consider it a match for any capacity
-      capacityMatch = true;
-    }
-  } else {
-    capacityMatch = desired.capacity === specific.capacity;
-  }
-  
-  return genderMatch && campusMatch && capacityMatch && bunkBedMatch;
-};
-
 export const MyListingPage: React.FC<MyListingPageProps> = ({ 
   onAddListing, 
   myListing, 
   allListings, 
   myListingId,
   onDeleteListing,
-  openFormInitially = false
+  openFormInitially = false,
+  onOpenLegal
 }) => {
   const [currentDorm, setCurrentDorm] = useState<SpecificDormInfo>(myListing?.currentDorm ?? initialCurrentDorm);
   const [desiredDorm, setDesiredDorm] = useState<DesiredDormInfo>(myListing?.desiredDorm ?? initialDesiredDorm);
   const [currentDormDetails, setCurrentDormDetails] = useState(myListing?.currentDormDetails ?? '');
   const [optionalRoomDetails, setOptionalRoomDetails] = useState<OptionalRoomDetails>(myListing?.optionalRoomDetails ?? initialOptionalRoomDetails);
   const [contactInfo, setContactInfo] = useState(myListing?.contactInfo ?? '');
+  const [acceptedTerms, setAcceptedTerms] = useState(!!myListing);
   const [showForm, setShowForm] = useState(!myListing || openFormInitially);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRoomDetails, setShowRoomDetails] = useState(false);
@@ -124,6 +103,10 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
       alert('Lütfen iletişim bilgisi girin.');
       return;
     }
+    if (!acceptedTerms) {
+      alert('Lütfen Kullanıcı Sözleşmesi ve Gizlilik Politikası onay kutusunu işaretleyin.');
+      return;
+    }
 
     setIsSubmitting(true);
     const newListing: Listing = {
@@ -158,16 +141,7 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
   const matches = useMemo(() => {
     if (!myListing) return [];
 
-    return allListings.filter(otherListing => {
-      if (otherListing.id === myListing.id) return false;
-
-      // Check if my current dorm satisfies their desired criteria
-      const theyWantMyDorm = specificSatisfiesDesired(myListing.currentDorm, otherListing.desiredDorm);
-      // Check if their current dorm satisfies my desired criteria
-      const iWantTheirDorm = specificSatisfiesDesired(otherListing.currentDorm, myListing.desiredDorm);
-
-      return theyWantMyDorm && iWantTheirDorm;
-    });
+    return findDormSwapMatches(allListings, myListing);
   }, [allListings, myListing]);
 
   // Başarım bildirimi göstermiyoruz; kayıttan sonra form kapanır
@@ -287,6 +261,45 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
                   placeholder="Telefon: 555-555-5555 veya Instagram: @kullaniciadi veya email@adresim.com"
                   required
                 />
+              </div>
+
+              {/* Legal Consent Checkbox */}
+              <div className="pt-3 border-t border-purple-200">
+                <label className="flex items-start cursor-pointer text-xs sm:text-sm text-purple-900 select-none">
+                  <input
+                    type="checkbox"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded flex-shrink-0"
+                    required
+                  />
+                  <span className="ml-2 leading-snug">
+                    <button
+                      type="button"
+                      onClick={() => onOpenLegal?.('terms')}
+                      className="text-indigo-700 font-semibold underline hover:text-indigo-900"
+                    >
+                      Kullanıcı Sözleşmesi
+                    </button>
+                    {', '}
+                    <button
+                      type="button"
+                      onClick={() => onOpenLegal?.('privacy')}
+                      className="text-indigo-700 font-semibold underline hover:text-indigo-900"
+                    >
+                      Gizlilik Politikası
+                    </button>
+                    {' ve '}
+                    <button
+                      type="button"
+                      onClick={() => onOpenLegal?.('disclaimer')}
+                      className="text-indigo-700 font-semibold underline hover:text-indigo-900"
+                    >
+                      Sorumluluk Reddi
+                    </button>
+                    'ni okudum. İletişim ve oda bilgilerimin platformda diğer kullanıcılar tarafından görülecek şekilde yayınlanmasını kendi rızamla onaylıyorum.
+                  </span>
+                </label>
               </div>
             </div>
 

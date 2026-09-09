@@ -1,4 +1,5 @@
 import React from 'react';
+import { Capacity } from '../types';
 import type { SpecificDormInfo, DesiredDormInfo } from '../types';
 import { GENDER_OPTIONS, CAMPUS_OPTIONS, CAPACITY_OPTIONS, DESIRED_CAPACITY_OPTIONS, BUNKBED_OPTIONS } from '../constants';
 
@@ -11,7 +12,7 @@ interface DormFieldSetProps<T extends DormInfo> {
   onChange: (field: keyof T, value: any) => void;
 }
 
-const SelectInput = <T,>({
+const SelectInput = ({
   label,
   name,
   value,
@@ -20,9 +21,9 @@ const SelectInput = <T,>({
   allowAny = false,
 }: {
   label: string;
-  name: keyof T;
-  value: T[keyof T];
-  onChange: (field: keyof T, value: any) => void;
+  name: keyof DormInfo;
+  value: string | boolean;
+  onChange: (field: keyof DormInfo, value: any) => void;
   options: { value: string; label: string }[];
   allowAny?: boolean;
 }) => (
@@ -70,7 +71,7 @@ export const DormFieldSet = <T extends DormInfo>({ title, isDesired, values, onC
           label="Yurt Tipi"
           name="gender"
           value={values.gender}
-          onChange={onChange}
+          onChange={(field, value) => onChange(field as keyof T, value)}
           options={GENDER_OPTIONS}
           allowAny={isDesired}
         />
@@ -78,7 +79,7 @@ export const DormFieldSet = <T extends DormInfo>({ title, isDesired, values, onC
           label="Kampüs"
           name="campus"
           value={values.campus}
-          onChange={onChange}
+          onChange={(field, value) => onChange(field as keyof T, value)}
           options={CAMPUS_OPTIONS}
           allowAny={isDesired}
         />
@@ -86,7 +87,7 @@ export const DormFieldSet = <T extends DormInfo>({ title, isDesired, values, onC
           label="Oda Kapasitesi"
           name="capacity"
           value={values.capacity}
-          onChange={onChange}
+          onChange={(field, value) => onChange(field as keyof T, value)}
           options={isDesired ? DESIRED_CAPACITY_OPTIONS : CAPACITY_OPTIONS}
           allowAny={isDesired}
         />
@@ -94,7 +95,7 @@ export const DormFieldSet = <T extends DormInfo>({ title, isDesired, values, onC
           label="Ranzalı mı?"
           name="bunkBed"
           value={String(values.bunkBed)}
-          onChange={(field, value) => onChange(field, value === 'true' ? true : value === 'false' ? false : 'any')}
+          onChange={(field, value) => onChange(field as keyof T, value === 'true' ? true : value === 'false' ? false : 'any')}
           options={BUNKBED_OPTIONS}
           allowAny={isDesired}
         />

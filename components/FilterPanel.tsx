@@ -19,18 +19,6 @@ const SelectInput = ({ label, value, onChange, options, placeholder }: { label: 
     </div>
 );
 
-const RadioGroup = ({ label, value, onChange, options }: { label: string, value: string, onChange: (val: string) => void, options: {value: string, label: string}[] }) => (
-    <div>
-        <label className="block text-xs sm:text-sm font-medium text-gray-700">{label}</label>
-        <div className="mt-1 sm:mt-2 flex flex-wrap items-center gap-1 sm:gap-2">
-             <button onClick={() => onChange('any')} className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${value === 'any' ? 'bg-indigo-600 text-white shadow' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'}`}>Farketmez</button>
-            {options.map(opt => (
-                <button key={opt.value} onClick={() => onChange(opt.value)} className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-colors ${value === opt.value ? 'bg-indigo-600 text-white shadow' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'}`}>{opt.label}</button>
-            ))}
-        </div>
-    </div>
-);
-
 
 export const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChange, onReset }) => {
   return (
@@ -61,11 +49,15 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({ filters, onFilterChang
             options={CAPACITY_OPTIONS}
             placeholder="Tümü"
         />
-        <RadioGroup
+        <SelectInput 
             label="Ranzalı mı?"
             value={String(filters.bunkBed)}
-            onChange={(val) => onFilterChange('bunkBed', val === 'any' ? 'any' : val === 'true')}
-            options={[{value: 'true', label: 'Evet'}, {value: 'false', label: 'Hayır'}]}
+            onChange={(e) => onFilterChange('bunkBed', e.target.value === 'any' ? 'any' : e.target.value === 'true')}
+            options={[
+              { value: 'true', label: 'Evet' },
+              { value: 'false', label: 'Hayır' }
+            ]}
+            placeholder="Fark etmez"
         />
       </div>
        <div className="mt-3 sm:mt-6 flex justify-end pt-2 sm:pt-4 border-t border-gray-200">

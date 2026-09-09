@@ -149,7 +149,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   <div
                     className="bg-indigo-500 h-2 rounded-full"
                     style={{
-                      width: `${(dorm.count / analytics.popularDorms[0].count) * 100}%`
+                      width: `${(dorm.count / (analytics.popularDorms[0]?.count || 1)) * 100}%`
                     }}
                   ></div>
                 </div>
@@ -247,39 +247,43 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Son 7 Gün Aktivite</h3>
         <div className="space-y-2">
-          {analytics.dailyActivity.slice(-7).map((day, index) => (
-            <div key={day.date} className="flex items-center space-x-4">
-              <div className="w-16 text-sm text-gray-600">
-                {new Date(day.date).toLocaleDateString('tr-TR', { weekday: 'short' })}
-              </div>
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-500 w-12">İlanlar:</span>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full"
-                      style={{
-                        width: `${(day.listings / Math.max(...analytics.dailyActivity.map(d => d.listings))) * 100}%`
-                      }}
-                    ></div>
-                  </div>
-                  <span className="text-xs text-gray-500 w-8">{day.listings}</span>
+          {(() => {
+            const maxListings = Math.max(...analytics.dailyActivity.map(d => d.listings), 1);
+            const maxMatches = Math.max(...analytics.dailyActivity.map(d => d.matches), 1);
+            return analytics.dailyActivity.slice(-7).map((day) => (
+              <div key={day.date} className="flex items-center space-x-4">
+                <div className="w-16 text-sm text-gray-600">
+                  {new Date(day.date).toLocaleDateString('tr-TR', { weekday: 'short' })}
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-500 w-12">Eşleşme:</span>
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-green-500 h-2 rounded-full"
-                      style={{
-                        width: `${(day.matches / Math.max(...analytics.dailyActivity.map(d => d.matches))) * 100}%`
-                      }}
-                    ></div>
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-500 w-12">İlanlar:</span>
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-500 h-2 rounded-full"
+                        style={{
+                          width: `${Math.min(100, Math.max(0, (day.listings / maxListings) * 100))}%`
+                        }}
+                      ></div>
+                    </div>
+                    <span className="text-xs text-gray-500 w-8">{day.listings}</span>
                   </div>
-                  <span className="text-xs text-gray-500 w-8">{day.matches}</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-500 w-12">Eşleşme:</span>
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-green-500 h-2 rounded-full"
+                        style={{
+                          width: `${Math.min(100, Math.max(0, (day.matches / maxMatches) * 100))}%`
+                        }}
+                      ></div>
+                    </div>
+                    <span className="text-xs text-gray-500 w-8">{day.matches}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
       </div>
 

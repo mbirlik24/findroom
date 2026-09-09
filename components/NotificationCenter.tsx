@@ -64,34 +64,51 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       {/* Bildirim Butonu */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+        className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors duration-200 focus:outline-none flex items-center justify-center"
+        aria-label="Bildirimler"
       >
-        <BellIcon className="w-6 h-6" />
+        <BellIcon className="w-5 h-5 sm:w-6 sm:h-6" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] sm:text-xs font-bold rounded-full h-4 sm:h-5 min-w-[16px] sm:min-w-[20px] px-1 flex items-center justify-center border-2 border-white shadow-xs">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
+      {/* Arka plan overlay (mobil için tıklandığında kapatma) */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/25 sm:bg-transparent"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       {/* Bildirim Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
-          <div className="p-4 border-b border-gray-200">
+        <div className="fixed top-14 right-3 left-3 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:mt-2 sm:w-80 sm:max-w-sm bg-white rounded-2xl sm:rounded-xl shadow-2xl border border-gray-200 z-50 max-h-[75vh] sm:max-h-96 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+          <div className="p-3.5 sm:p-4 border-b border-gray-100 bg-gray-50/70">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Bildirimler</h3>
-              <div className="flex space-x-2">
+              <div className="flex items-center space-x-2">
+                <h3 className="text-base sm:text-lg font-bold text-gray-900">Bildirimler</h3>
+                {unreadCount > 0 && (
+                  <span className="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                    {unreadCount} yeni
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
                 {unreadCount > 0 && (
                   <button
                     onClick={onMarkAllAsRead}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold"
                   >
-                    Tümünü Okundu İşaretle
+                    Tümünü Oku
                   </button>
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-200/60"
+                  aria-label="Kapat"
                 >
                   <XMarkIcon className="w-4 h-4" />
                 </button>
@@ -99,54 +116,54 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             </div>
           </div>
 
-          <div className="max-h-64 overflow-y-auto">
+          <div className="overflow-y-auto divide-y divide-gray-100 flex-1">
             {notifications.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-6 text-center text-gray-500">
                 <BellIcon className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                <p>Henüz bildirim yok</p>
+                <p className="text-sm font-medium">Henüz bildirim yok</p>
               </div>
             ) : (
               notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 ${
-                    !notification.read ? 'bg-blue-50/30' : ''
+                  className={`p-3.5 sm:p-4 transition-colors duration-200 ${
+                    !notification.read ? 'bg-indigo-50/40' : 'hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-start space-x-3">
-                    <div className="text-lg">
+                    <div className="text-lg leading-none mt-0.5">
                       {getNotificationIcon(notification.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h4 className={`text-sm font-medium ${
+                      <div className="flex items-center justify-between gap-1">
+                        <h4 className={`text-xs sm:text-sm font-semibold ${
                           !notification.read ? 'text-gray-900' : 'text-gray-700'
                         }`}>
                           {notification.title}
                         </h4>
-                        <div className="flex items-center space-x-1">
+                        <div className="flex items-center space-x-1 shrink-0">
                           {!notification.read && (
                             <button
                               onClick={() => onMarkAsRead(notification.id)}
-                              className="text-gray-400 hover:text-green-600 transition-colors"
+                              className="p-1 text-gray-400 hover:text-green-600 transition-colors"
                               title="Okundu işaretle"
                             >
-                              <CheckIcon className="w-4 h-4" />
+                              <CheckIcon className="w-3.5 h-3.5" />
                             </button>
                           )}
                           <button
                             onClick={() => onDeleteNotification(notification.id)}
-                            className="text-gray-400 hover:text-red-600 transition-colors"
+                            className="p-1 text-gray-400 hover:text-red-600 transition-colors"
                             title="Sil"
                           >
-                            <XMarkIcon className="w-4 h-4" />
+                            <XMarkIcon className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1 leading-snug break-words">
                         {notification.message}
                       </p>
-                      <p className="text-xs text-gray-400 mt-2">
+                      <p className="text-[10px] sm:text-xs text-gray-400 mt-1.5">
                         {formatTime(notification.timestamp)}
                       </p>
                     </div>

@@ -1,6 +1,7 @@
 
 import React, { useMemo } from 'react';
-import type { Listing, SpecificDormInfo, DesiredDormInfo } from '../types';
+import type { Listing } from '../types';
+import { findDormSwapMatches } from '../matching';
 import { ListingCard } from './ListingCard';
 import { HeartIcon, PlusCircleIcon } from './icons';
 
@@ -9,32 +10,13 @@ interface MatchesPageProps {
   myListingId: string | null;
 }
 
-// Checks if a specific dorm (someone's current) satisfies a desired dorm's criteria
-const specificSatisfiesDesired = (specific: SpecificDormInfo, desired: DesiredDormInfo): boolean => {
-  return (
-    (desired.gender === 'any' || desired.gender === specific.gender) &&
-    (desired.campus === 'any' || desired.campus === specific.campus) &&
-    (desired.capacity === 'any' || desired.capacity === specific.capacity) &&
-    (desired.bunkBed === 'any' || desired.bunkBed === specific.bunkBed)
-  );
-};
-
 export const MatchesPage: React.FC<MatchesPageProps> = ({ listings, myListingId }) => {
   const myListing = useMemo(() => listings.find(l => l.id === myListingId), [listings, myListingId]);
 
   const matches = useMemo(() => {
     if (!myListing) return [];
 
-    return listings.filter(otherListing => {
-      if (otherListing.id === myListing.id) return false;
-
-      // Check if my current dorm satisfies their desired criteria
-      const theyWantMyDorm = specificSatisfiesDesired(myListing.currentDorm, otherListing.desiredDorm);
-      // Check if their current dorm satisfies my desired criteria
-      const iWantTheirDorm = specificSatisfiesDesired(otherListing.currentDorm, myListing.desiredDorm);
-
-      return theyWantMyDorm && iWantTheirDorm;
-    });
+    return findDormSwapMatches(listings, myListing);
   }, [listings, myListing]);
 
   if (!myListing) {
