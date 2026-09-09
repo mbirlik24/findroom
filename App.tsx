@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { type Listing, type RoommateSearch, type Notification, type Analytics, type UserStats, type User } from './types';
 import { MyListingPage } from './components/MyListingPage';
 import { ExplorePage } from './components/ExplorePage';
@@ -634,6 +634,35 @@ export default function App() {
         } catch {}
     }, []);
     
+    // Sekme değiştiğinde sayfa scroll'unu anında en üste sıfırla ve navbar'ı göster
+    useLayoutEffect(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        setIsNavbarVisible(true);
+        setLastScrollY(0);
+
+        // Bazı mobil tarayıcılarda layout oturduktan sonra scroll pozisyonunun korunmasını önlemek için bir sonraki frame'de de teyit et
+        const raf = requestAnimationFrame(() => {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+        });
+
+        return () => cancelAnimationFrame(raf);
+    }, [currentView]);
+
+    const handleViewChange = (view: View, resetForm = true) => {
+        if (resetForm) setOpenListingForm(false);
+        if (currentView === view) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+        } else {
+            setCurrentView(view);
+        }
+    };
+
     const myListing = listings.find(l => l.id === myListingId) || null;
 
     const renderView = () => {
@@ -658,7 +687,7 @@ export default function App() {
                         onDeleteListing={deleteListingHandler} 
                         onCreateRequest={() => {
                             setOpenListingForm(true);
-                            setCurrentView('my-listing');
+                            handleViewChange('my-listing', false);
                         }} 
                     />
                 );
@@ -706,37 +735,25 @@ export default function App() {
                         <div className="flex items-center gap-1 bg-gray-100/90 p-1 rounded-xl border border-gray-200/70">
                            <NavButton
                                isActive={currentView === 'explore'}
-                               onClick={() => {
-                                   setOpenListingForm(false);
-                                   setCurrentView('explore');
-                               }}
+                               onClick={() => handleViewChange('explore')}
                                icon={<SearchIcon className="w-5 h-5" />}
                                label="Keşfet"
                            />
                            <NavButton
                                isActive={currentView === 'my-listing'}
-                               onClick={() => {
-                                   setOpenListingForm(false);
-                                   setCurrentView('my-listing');
-                               }}
+                               onClick={() => handleViewChange('my-listing')}
                                icon={<SwapIcon className="w-5 h-5" />}
                                label="Eşleşmelerim"
                            />
                            <NavButton
                                isActive={currentView === 'roommate'}
-                               onClick={() => {
-                                   setOpenListingForm(false);
-                                   setCurrentView('roommate');
-                               }}
+                               onClick={() => handleViewChange('roommate')}
                                icon={<UserGroupIcon className="w-5 h-5" />}
                                label="Oda Arkadaşını Bul"
                            />
                            <NavButton
                                isActive={currentView === 'analytics'}
-                               onClick={() => {
-                                   setOpenListingForm(false);
-                                   setCurrentView('analytics');
-                               }}
+                               onClick={() => handleViewChange('analytics')}
                                icon={<ChartBarIcon className="w-5 h-5" />}
                                label="İstatistikler"
                            />
@@ -777,10 +794,7 @@ export default function App() {
             <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] pb-safe">
                 <div className="grid grid-cols-4 gap-1 p-1.5">
                     <button
-                        onClick={() => {
-                            setOpenListingForm(false);
-                            setCurrentView('explore');
-                        }}
+                        onClick={() => handleViewChange('explore')}
                         className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
                             currentView === 'explore'
                                 ? 'text-indigo-600 font-bold bg-indigo-50/80'
@@ -791,10 +805,7 @@ export default function App() {
                         <span className="text-[11px] leading-tight font-medium">Keşfet</span>
                     </button>
                     <button
-                        onClick={() => {
-                            setOpenListingForm(false);
-                            setCurrentView('my-listing');
-                        }}
+                        onClick={() => handleViewChange('my-listing')}
                         className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
                             currentView === 'my-listing'
                                 ? 'text-indigo-600 font-bold bg-indigo-50/80'
@@ -805,10 +816,7 @@ export default function App() {
                         <span className="text-[11px] leading-tight font-medium">Eşleşmelerim</span>
                     </button>
                     <button
-                        onClick={() => {
-                            setOpenListingForm(false);
-                            setCurrentView('roommate');
-                        }}
+                        onClick={() => handleViewChange('roommate')}
                         className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
                             currentView === 'roommate'
                                 ? 'text-indigo-600 font-bold bg-indigo-50/80'
@@ -819,10 +827,7 @@ export default function App() {
                         <span className="text-[11px] leading-tight font-medium">Oda Arkadaşı</span>
                     </button>
                     <button
-                        onClick={() => {
-                            setOpenListingForm(false);
-                            setCurrentView('analytics');
-                        }}
+                        onClick={() => handleViewChange('analytics')}
                         className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
                             currentView === 'analytics'
                                 ? 'text-indigo-600 font-bold bg-indigo-50/80'
