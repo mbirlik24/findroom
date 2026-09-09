@@ -2,6 +2,7 @@ import { collection, doc, getDocs, setDoc, deleteDoc, query, orderBy, getDoc, up
 import { db } from './config';
 import type { Listing, RoommateSearch, RoomStats, RoommateStats, User } from '../types';
 import { Gender, Campus, Capacity } from '../types';
+import { NEW_TERM_START_DATE } from '../constants';
 
 const listingsCollectionRef = collection(db, 'listings');
 const roommateCollectionRef = collection(db, 'roommate_searches');
@@ -30,10 +31,12 @@ export const getListings = async (): Promise<Listing[]> => {
     try {
         const q = query(listingsCollectionRef, orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
-        const listings = querySnapshot.docs.map(doc => ({
-            ...(doc.data() as Listing),
-            id: doc.id,
-        }));
+        const listings = querySnapshot.docs
+            .map(doc => ({
+                ...(doc.data() as Listing),
+                id: doc.id,
+            }))
+            .filter(l => l.createdAt && l.createdAt >= NEW_TERM_START_DATE);
         return listings;
     } catch (error) {
         console.error("Error fetching listings: ", error);
@@ -93,7 +96,9 @@ export const getRoommateSearches = async (): Promise<RoommateSearch[]> => {
     try {
         const q = query(roommateCollectionRef, orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
-        return querySnapshot.docs.map(d => ({ ...(d.data() as RoommateSearch), id: d.id }));
+        return querySnapshot.docs
+            .map(d => ({ ...(d.data() as RoommateSearch), id: d.id }))
+            .filter(s => s.createdAt && s.createdAt >= NEW_TERM_START_DATE);
     } catch (error) {
         console.error('Error fetching roommate searches:', error);
         return [];

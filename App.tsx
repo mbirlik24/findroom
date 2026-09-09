@@ -7,6 +7,7 @@ import { NotificationCenter } from './components/NotificationCenter';
 import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { SwapIcon, PlusCircleIcon, SearchIcon, UserGroupIcon, ChartBarIcon } from './components/icons';
 import { getListings, saveListing, deleteListing, getRoommateSearches, saveRoommateSearch, deleteRoommateSearch, createOrUpdateUser, getUser, updateUserLastActive, testFirebaseConnection } from './firebase/firestoreService';
+import { NEW_TERM_START_DATE } from './constants';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 
 type View = 'my-listing' | 'explore' | 'roommate' | 'analytics';
@@ -153,15 +154,21 @@ export default function App() {
             await initializeUser(userId);
             
             const listingsFromDb = await getListings();
-            console.log('📊 Listings from Firebase:', listingsFromDb.length);
-            // Merge my local listing (if any) so it appears immediately after refresh
+            console.log('📊 Listings from Firebase (New Term):', listingsFromDb.length);
+            // Merge my local listing (if any) if it belongs to the new term
             let mergedListings = listingsFromDb;
             try {
                 const rawMyListing = localStorage.getItem('my-listing');
                 if (rawMyListing) {
                     const localListing = JSON.parse(rawMyListing) as Listing;
-                    if (!listingsFromDb.find(l => l.id === localListing.id)) {
-                        mergedListings = [localListing, ...listingsFromDb];
+                    if (localListing.createdAt && localListing.createdAt >= NEW_TERM_START_DATE) {
+                        if (!listingsFromDb.find(l => l.id === localListing.id)) {
+                            mergedListings = [localListing, ...listingsFromDb];
+                        }
+                    } else {
+                        // Clear old term listing from localStorage
+                        localStorage.removeItem('my-listing');
+                        localStorage.removeItem('dorm-swap-my-id');
                     }
                 }
             } catch {}
@@ -169,12 +176,21 @@ export default function App() {
             console.log('📊 Final listings count:', mergedListings.length);
             
             const roommateFromDb = await getRoommateSearches();
-            console.log('👥 Roommate searches from Firebase:', roommateFromDb.length);
-            // Load my roommate search from localStorage and merge for immediate UX
+            console.log('👥 Roommate searches from Firebase (New Term):', roommateFromDb.length);
+            // Load my roommate search from localStorage if it belongs to the new term
             let localMySearch: RoommateSearch | null = null;
             try {
                 const raw = localStorage.getItem('my-roommate-search');
-                localMySearch = raw ? (JSON.parse(raw) as RoommateSearch) : null;
+                if (raw) {
+                    const parsed = JSON.parse(raw) as RoommateSearch;
+                    if (parsed.createdAt && parsed.createdAt >= NEW_TERM_START_DATE) {
+                        localMySearch = parsed;
+                    } else {
+                        // Clear old term roommate search from localStorage
+                        localStorage.removeItem('my-roommate-search');
+                        localStorage.removeItem('dorm-swap-roommate-id');
+                    }
+                }
             } catch {}
             const merged = localMySearch && !roommateFromDb.find(s => s.id === localMySearch!.id)
                 ? [localMySearch, ...roommateFromDb]
@@ -183,42 +199,37 @@ export default function App() {
             console.log('👥 Final roommate searches count:', merged.length);
             
             const savedMyId = localStorage.getItem('dorm-swap-my-id');
-            if (savedMyId) {
+            const validMyListing = mergedListings.find(l => l.id === savedMyId);
+            if (validMyListing) {
                 setMyListingId(savedMyId);
             } else {
-                // Auto-restore by userId
+                localStorage.removeItem('dorm-swap-my-id');
+                // Auto-restore by userId from new-term listings only
                 const byUser = mergedListings.find(l => l.userId === userId);
                 if (byUser) {
                     setMyListingId(byUser.id);
+                } else {
+                    setMyListingId(null);
                 }
             }
 
             const savedRoommateId = localStorage.getItem('dorm-swap-roommate-id');
-            if (savedRoommateId) {
+            const validRoommateSearch = merged.find(s => s.id === savedRoommateId);
+            if (validRoommateSearch) {
                 setMyRoommateSearchId(savedRoommateId);
-            } else if (localMySearch) {
-                setMyRoommateSearchId(localMySearch.id);
             } else {
-                // Auto-restore by userId
-                const byUser = merged.find(s => s.userId === userId);
-                if (byUser) {
-                    setMyRoommateSearchId(byUser.id);
+                localStorage.removeItem('dorm-swap-roommate-id');
+                if (localMySearch) {
+                    setMyRoommateSearchId(localMySearch.id);
+                } else {
+                    const byUser = merged.find(s => s.userId === userId);
+                    if (byUser) {
+                        setMyRoommateSearchId(byUser.id);
+                    } else {
+                        setMyRoommateSearchId(null);
+                    }
                 }
             }
-
-            // Hoş geldin bildirimi kontrolü
-            try {
-                const savedNotifs = JSON.parse(localStorage.getItem('notifications') || '[]');
-                if (savedNotifs.length === 0) {
-                    addNotification({
-                        userId,
-                        type: 'system',
-                        title: 'Hoş Geldiniz!',
-                        message: 'Findroom %100 ücretsiz ve açık bir öğrenci platformudur. Hemen yurt takası ve oda arkadaşı ilanı oluşturabilirsiniz.',
-                        read: false
-                    });
-                }
-            } catch {}
 
             // Always start on Keşfet
             setCurrentView('explore');
@@ -609,14 +620,6 @@ export default function App() {
                            />
                         </div>
                         
-                        {/* %100 Ücretsiz Rozeti */}
-                        <div className="ml-3 hidden md:flex items-center">
-                            <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1.5 rounded-full border border-emerald-300 flex items-center gap-1.5 shadow-sm">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                %100 Ücretsiz
-                            </span>
-                        </div>
-
                         {/* Bildirim Merkezi */}
                         <div className="ml-3">
                             <NotificationCenter
@@ -630,11 +633,7 @@ export default function App() {
 
                     {/* Mobile Layout */}
                     <div className="sm:hidden space-y-3">
-                        <div className="flex items-center justify-between px-1">
-                            <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full border border-emerald-300 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                %100 Ücretsiz
-                            </span>
+                        <div className="flex items-center justify-end px-1">
                             <NotificationCenter
                                 notifications={notifications}
                                 onMarkAsRead={markNotificationAsRead}

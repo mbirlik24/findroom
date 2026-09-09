@@ -1,5 +1,8 @@
 import { Gender, Campus, Capacity } from './types';
 
+// Yeni Dönem başlangıç tarihi (1 Ağustos 2026). Bu tarihten önceki ilanlar eski dönem olarak kabul edilir.
+export const NEW_TERM_START_DATE = '2026-08-01T00:00:00.000Z';
+
 export const GENDER_OPTIONS = [
   { value: Gender.Female, label: 'Kız' },
   { value: Gender.Male, label: 'Erkek' },
