@@ -81,7 +81,7 @@ export const ContactDisplay: React.FC<ContactDisplayProps> = ({
           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all transform hover:scale-105 active:scale-95 select-none"
           title="WhatsApp'tan Mesaj Gönder"
         >
-          <FaWhatsapp className="w-4 h-4" />
+          <FaWhatsapp size={16} />
           <span>WhatsApp'tan Yaz</span>
         </a>
       )}
@@ -95,7 +95,7 @@ export const ContactDisplay: React.FC<ContactDisplayProps> = ({
           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-500 hover:from-purple-700 hover:via-pink-700 hover:to-rose-600 text-white rounded-lg text-xs font-semibold shadow-sm transition-all transform hover:scale-105 active:scale-95 select-none"
           title="Instagram Profilini Aç"
         >
-          <FaInstagram className="w-4 h-4" />
+          <FaInstagram size={16} />
           <span>@{parsed.instagram}</span>
         </a>
       )}
@@ -107,7 +107,7 @@ export const ContactDisplay: React.FC<ContactDisplayProps> = ({
           className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all transform hover:scale-105 active:scale-95 select-none"
           title="E-posta Gönder"
         >
-          <FaEnvelope className="w-3.5 h-3.5" />
+          <FaEnvelope size={14} />
           <span>{parsed.email}</span>
         </a>
       )}

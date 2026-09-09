@@ -1,16 +1,21 @@
-import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { type Listing, type RoommateSearch, type Notification, type Analytics, type UserStats, type User } from './types';
 import { MyListingPage } from './components/MyListingPage';
 import { ExplorePage } from './components/ExplorePage';
 import { RoommatePage } from './components/RoommatePage';
 import { NotificationCenter } from './components/NotificationCenter';
-import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { Footer } from './components/Footer';
 import { LegalModal, type LegalTab } from './components/LegalModal';
 import { SwapIcon, SearchIcon, UserGroupIcon, ChartBarIcon } from './components/icons';
 import { getListings, saveListing, deleteListing, getRoommateSearches, saveRoommateSearch, deleteRoommateSearch, createOrUpdateUser, getUser, updateUserLastActive } from './firebase/firestoreService';
 import { NEW_TERM_START_DATE } from './constants';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
+import { calculateAnalytics, isListingOwnedBy, runOptimisticMutation } from './appLogic';
+import { findDormSwapMatches } from './matching';
+
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard').then(module => ({
+    default: module.AnalyticsDashboard,
+})));
 
 type View = 'my-listing' | 'explore' | 'roommate' | 'analytics';
 
@@ -293,7 +298,9 @@ export default function App() {
                 } catch {}
 
                 const savedMyId = localStorage.getItem('dorm-swap-my-id');
-                const validMyListing = mergedListings.find(l => l.id === savedMyId);
+                const validMyListing = mergedListings.find(
+                    listing => listing.id === savedMyId && isListingOwnedBy(listing, userId),
+                );
                 if (validMyListing) {
                     setMyListingId(savedMyId);
                 } else {
@@ -303,7 +310,9 @@ export default function App() {
                 }
 
                 const savedRoommateId = localStorage.getItem('dorm-swap-roommate-id');
-                const validRoommateSearch = merged.find(s => s.id === savedRoommateId);
+                const validRoommateSearch = merged.find(
+                    search => search.id === savedRoommateId && search.userId === userId,
+                );
                 if (validRoommateSearch) {
                     setMyRoommateSearchId(savedRoommateId);
                 } else {
@@ -350,23 +359,32 @@ export default function App() {
             userId: currentUser?.id || getOrCreateUserId()
         };
 
-        // Optimistic UI update for a responsive feel
-        setListings(prev => {
-            const existingIndex = prev.findIndex(l => l.id === listingToSave.id);
-            if (existingIndex > -1) {
-                const updatedListings = [...prev];
-                updatedListings[existingIndex] = listingToSave;
-                return updatedListings;
-            }
-            return [listingToSave, ...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        });
-        setMyListingId(listingToSave.id);
-        // Persist my listing locally so it survives refresh
-        try { localStorage.setItem('my-listing', JSON.stringify(listingToSave)); } catch {}
-
-        // Save to Firestore
         try {
-            await saveListing(listingToSave);
+            await runOptimisticMutation({
+                apply: () => {
+                    setListings(prev => {
+                        const existingIndex = prev.findIndex(l => l.id === listingToSave.id);
+                        if (existingIndex > -1) {
+                            const updatedListings = [...prev];
+                            updatedListings[existingIndex] = listingToSave;
+                            return updatedListings;
+                        }
+                        return [listingToSave, ...prev].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+                    });
+                    setMyListingId(listingToSave.id);
+                    try { localStorage.setItem('my-listing', JSON.stringify(listingToSave)); } catch {}
+                },
+                persist: () => saveListing(listingToSave),
+                rollback: () => {
+                    setListings(listings);
+                    setMyListingId(myListingId);
+                    try {
+                        const previous = listings.find(item => item.id === myListingId);
+                        if (previous) localStorage.setItem('my-listing', JSON.stringify(previous));
+                        else localStorage.removeItem('my-listing');
+                    } catch {}
+                },
+            });
             addNotification({
                 userId: currentUser?.id || 'guest',
                 type: 'new_listing',
@@ -377,11 +395,8 @@ export default function App() {
         } catch (error) {
             console.error("Failed to save listing to Firestore:", error);
             alert("İlan kaydedilemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.");
-            // Revert optimistic update on failure by refetching from DB
-            const listingsFromDb = await getListings();
-            setListings(listingsFromDb);
         }
-    }, [currentUser, addNotification]);
+    }, [currentUser, addNotification, listings, myListingId]);
 
     const addOrUpdateRoommateSearch = useCallback(async (newSearch: RoommateSearch) => {
         const normalized: RoommateSearch = {
@@ -391,22 +406,32 @@ export default function App() {
             roomNumber: newSearch.roomNumber.trim(),
             contactInfo: newSearch.contactInfo.trim(),
         };
-        // Optimistic UI update for a responsive feel
-        setRoommateSearches(prev => {
-            const existingIndex = prev.findIndex(s => s.id === normalized.id);
-            if (existingIndex > -1) {
-                const updatedSearches = [...prev];
-                updatedSearches[existingIndex] = normalized;
-                return updatedSearches;
-            }
-            return [normalized, ...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        });
-        setMyRoommateSearchId(normalized.id);
-        // Persist my latest roommate search locally for quick restore
-        try { localStorage.setItem('my-roommate-search', JSON.stringify(normalized)); } catch {}
-
         try {
-            await saveRoommateSearch(normalized);
+            await runOptimisticMutation({
+                apply: () => {
+                    setRoommateSearches(prev => {
+                        const existingIndex = prev.findIndex(s => s.id === normalized.id);
+                        if (existingIndex > -1) {
+                            const updatedSearches = [...prev];
+                            updatedSearches[existingIndex] = normalized;
+                            return updatedSearches;
+                        }
+                        return [normalized, ...prev].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+                    });
+                    setMyRoommateSearchId(normalized.id);
+                    try { localStorage.setItem('my-roommate-search', JSON.stringify(normalized)); } catch {}
+                },
+                persist: () => saveRoommateSearch(normalized),
+                rollback: () => {
+                    setRoommateSearches(roommateSearches);
+                    setMyRoommateSearchId(myRoommateSearchId);
+                    try {
+                        const previous = roommateSearches.find(item => item.id === myRoommateSearchId);
+                        if (previous) localStorage.setItem('my-roommate-search', JSON.stringify(previous));
+                        else localStorage.removeItem('my-roommate-search');
+                    } catch {}
+                },
+            });
             addNotification({
                 userId: currentUser?.id || 'guest',
                 type: 'new_listing',
@@ -418,9 +443,14 @@ export default function App() {
             console.error("Failed to save roommate search:", error);
             alert("Arama kaydedilemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.");
         }
-    }, [currentUser, addNotification]);
+    }, [currentUser, addNotification, roommateSearches, myRoommateSearchId]);
 
     const deleteListingHandler = useCallback(async (listingId: string) => {
+        const listing = listings.find(item => item.id === listingId);
+        if (!isListingOwnedBy(listing, currentUser?.id)) {
+            alert('Bu ilanı silme yetkiniz yok.');
+            return;
+        }
         try {
             // Optimistic UI update
             setListings(prev => prev.filter(l => l.id !== listingId));
@@ -443,13 +473,18 @@ export default function App() {
         } catch (error) {
             console.error("Failed to delete listing:", error);
             alert("İlan silinemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.");
-            // Revert optimistic update by refetching from DB
-            const listingsFromDb = await getListings();
-            setListings(listingsFromDb);
+            setListings(listings);
+            setMyListingId(myListingId);
+            if (listing) localStorage.setItem('my-listing', JSON.stringify(listing));
         }
-    }, [myListingId, currentUser, addNotification]);
+    }, [myListingId, currentUser, addNotification, listings]);
 
     const deleteRoommateSearchHandler = useCallback(async (searchId: string) => {
+        const search = roommateSearches.find(item => item.id === searchId);
+        if (!search || !currentUser?.id || search.userId !== currentUser.id) {
+            alert('Bu aramayı silme yetkiniz yok.');
+            return;
+        }
         try {
             // Optimistic UI update
             setRoommateSearches(prev => prev.filter(s => s.id !== searchId));
@@ -473,10 +508,11 @@ export default function App() {
         } catch (error) {
             console.error("Failed to delete roommate search:", error);
             alert("Arama silinemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.");
-            const fresh = await getRoommateSearches();
-            setRoommateSearches(fresh);
+            setRoommateSearches(roommateSearches);
+            setMyRoommateSearchId(myRoommateSearchId);
+            localStorage.setItem('my-roommate-search', JSON.stringify(search));
         }
-    }, [myRoommateSearchId, currentUser, addNotification]);
+    }, [myRoommateSearchId, currentUser, addNotification, roommateSearches]);
 
     // Periodically refresh roommate searches while on roommate view to reflect others' submissions
     useEffect(() => {
@@ -590,61 +626,19 @@ export default function App() {
 
     // Analitik verilerini güncelle
     const updateAnalytics = useCallback(() => {
-        const totalListings = listings.length;
-        const totalUsers = new Set(listings.map(l => l.contactInfo)).size;
-        
-        // Popüler yurtlar hesapla
-        const dormCounts: { [key: string]: number } = {};
-        listings.forEach(listing => {
-            const dormKey = `${listing.currentDorm.campus} - ${listing.currentDorm.capacity}`;
-            dormCounts[dormKey] = (dormCounts[dormKey] || 0) + 1;
-        });
-        
-        const popularDorms = Object.entries(dormCounts)
-            .map(([dorm, count]) => ({ dorm, count }))
-            .sort((a, b) => b.count - a.count);
-
-        // Günlük aktivite hesapla (son 7 gün)
-        const dailyActivity = [];
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0];
-            
-            const dayListings = listings.filter(l => 
-                l.createdAt.startsWith(dateStr)
-            ).length;
-            
-            dailyActivity.push({
-                date: dateStr,
-                listings: dayListings,
-                matches: Math.floor(dayListings * 0.3) // Tahmini eşleşme
-            });
-        }
-
-        setAnalytics({
-            totalListings,
-            totalUsers,
-            successfulSwaps: Math.floor(totalListings * 0.2), // Tahmini başarı
-            averageMatchTime: 24 * 60, // 24 saat
-            popularDorms,
-            dailyActivity,
-            userActivity: []
-        });
-    }, [listings]);
+        setAnalytics(calculateAnalytics(listings, roommateSearches));
+    }, [listings, roommateSearches]);
 
     // Kullanıcı istatistiklerini güncelle
     const updateUserStats = useCallback(() => {
-        if (!myListingId) return;
-        
-        const myListings = listings.filter(l => l.id === myListingId);
-        const matches = myListings.length; // Basit hesaplama
+        const myListing = listings.find(l => l.id === myListingId);
+        const matches = myListing ? findDormSwapMatches(listings, myListing).length : 0;
         
         setUserStats({
-            listingsCreated: myListings.length,
+            listingsCreated: myListing ? 1 : 0,
             matchesFound: matches,
-            successfulSwaps: Math.floor(matches * 0.1),
-            averageResponseTime: 2 * 60, // 2 saat
+            successfulSwaps: 0,
+            averageResponseTime: 0,
             lastActive: new Date().toISOString()
         });
     }, [listings, myListingId]);
@@ -742,7 +736,11 @@ export default function App() {
                     />
                 );
             case 'analytics':
-                return <AnalyticsDashboard analytics={analytics} userStats={userStats} />;
+                return (
+                    <Suspense fallback={<div className="py-12 text-center text-gray-500">İstatistikler yükleniyor...</div>}>
+                        <AnalyticsDashboard analytics={analytics} userStats={userStats} />
+                    </Suspense>
+                );
             default:
                 return (
                     <MyListingPage 
@@ -759,12 +757,12 @@ export default function App() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-between relative">
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-between relative w-full max-w-full overflow-x-hidden">
             <div id="top-anchor" className="absolute top-0 left-0 w-0 h-0 pointer-events-none" />
-            <header className={`fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-xs transition-transform duration-300 ease-in-out ${
+            <header className={`fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-xs transition-transform duration-300 ease-in-out w-full max-w-full ${
                 isNavbarVisible ? 'translate-y-0' : '-translate-y-full sm:translate-y-0'
             }`}>
-                <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3">
+                <nav className="container mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 w-full">
                     {/* Desktop Layout */}
                     <div className="hidden sm:flex items-center justify-between w-full">
                         <div className="flex items-center">
@@ -832,11 +830,11 @@ export default function App() {
             </header>
 
             {/* Mobile Bottom Navigation Bar (Alt Bar) */}
-            <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] pb-safe">
-                <div className="grid grid-cols-4 gap-1 p-1.5">
+            <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.06)] pb-safe w-full max-w-full">
+                <div className="grid grid-cols-4 gap-1 p-1.5 w-full">
                     <button
                         onClick={() => handleViewChange('explore')}
-                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 select-none touch-manipulation ${
                             currentView === 'explore'
                                 ? 'text-indigo-600 font-bold bg-indigo-50/80'
                                 : 'text-gray-500 hover:text-gray-900'
@@ -847,7 +845,7 @@ export default function App() {
                     </button>
                     <button
                         onClick={() => handleViewChange('my-listing')}
-                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 select-none touch-manipulation ${
                             currentView === 'my-listing'
                                 ? 'text-indigo-600 font-bold bg-indigo-50/80'
                                 : 'text-gray-500 hover:text-gray-900'
@@ -858,7 +856,7 @@ export default function App() {
                     </button>
                     <button
                         onClick={() => handleViewChange('roommate')}
-                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 select-none touch-manipulation ${
                             currentView === 'roommate'
                                 ? 'text-indigo-600 font-bold bg-indigo-50/80'
                                 : 'text-gray-500 hover:text-gray-900'
@@ -869,7 +867,7 @@ export default function App() {
                     </button>
                     <button
                         onClick={() => handleViewChange('analytics')}
-                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 ${
+                        className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all duration-200 select-none touch-manipulation ${
                             currentView === 'analytics'
                                 ? 'text-indigo-600 font-bold bg-indigo-50/80'
                                 : 'text-gray-500 hover:text-gray-900'
@@ -881,8 +879,8 @@ export default function App() {
                 </div>
             </div>
 
-            <main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-28 sm:pt-24 sm:pb-12 flex-1 w-full">
-                <div key={currentView} className="max-w-4xl mx-auto">
+            <main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-28 sm:pt-24 sm:pb-12 flex-1 w-full max-w-full min-w-0">
+                <div key={currentView} className="max-w-4xl mx-auto w-full min-w-0">
                    {isInitialized ? renderView() : (
                        <div className="space-y-6 animate-pulse pt-4">
                            <div className="h-9 w-32 bg-gray-200 rounded-lg"></div>

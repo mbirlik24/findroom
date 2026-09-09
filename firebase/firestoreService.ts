@@ -45,7 +45,7 @@ export const getListings = async (): Promise<Listing[]> => {
         return listings;
     } catch (error) {
         console.error("Error fetching listings: ", error);
-        return [];
+        throw error;
     }
 };
 
@@ -110,7 +110,7 @@ export const getRoommateSearches = async (): Promise<RoommateSearch[]> => {
             .map(d => ({ ...(d.data() as RoommateSearch), id: d.id }));
     } catch (error) {
         console.error('Error fetching roommate searches:', error);
-        return [];
+        throw error;
     }
 };
 

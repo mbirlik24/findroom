@@ -20,6 +20,24 @@ test('matches one of several preferred capacities', () => {
   }), true);
 });
 
+test('matches one of several preferred campuses', () => {
+  assert.equal(dormsMatch(current(Capacity.Two), {
+    gender: Gender.Female,
+    campus: 'multiple',
+    preferredCampuses: [Campus.Main, Campus.West],
+    capacity: Capacity.Two,
+    bunkBed: false,
+  }), true);
+
+  assert.equal(dormsMatch(current(Capacity.Two), {
+    gender: Gender.Female,
+    campus: 'multiple',
+    preferredCampuses: [Campus.West],
+    capacity: Capacity.Two,
+    bunkBed: false,
+  }), false);
+});
+
 test('requires both users to want each other dorms', () => {
   const listings = [
     {

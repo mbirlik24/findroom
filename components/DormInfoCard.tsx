@@ -36,7 +36,15 @@ export const DormInfoCard: React.FC<DormInfoCardProps> = ({ info, title }) => {
                 <DetailItem
                     icon={<BuildingIcon />}
                     label="Kampüs"
-                    value={info.campus === 'any' ? 'Farketmez' : info.campus}
+                    value={
+                        info.campus === 'any' 
+                            ? 'Farketmez' 
+                            : info.campus === 'multiple'
+                                ? (info as DesiredDormInfo).preferredCampuses && (info as DesiredDormInfo).preferredCampuses!.length > 0
+                                    ? (info as DesiredDormInfo).preferredCampuses!.join(', ')
+                                    : 'Birden fazla seçenek uygun'
+                                : info.campus
+                    }
                 />
                 <DetailItem
                     icon={<HomeIcon />}

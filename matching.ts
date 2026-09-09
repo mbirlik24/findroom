@@ -10,8 +10,14 @@ export const dormsMatch = (
         || desired.preferredCapacities.includes(specific.capacity)
       : desired.capacity === specific.capacity);
 
+  const campusMatches = desired.campus === 'any'
+    || (desired.campus === 'multiple'
+      ? !desired.preferredCampuses?.length
+        || desired.preferredCampuses.includes(specific.campus)
+      : desired.campus === specific.campus);
+
   return (desired.gender === 'any' || desired.gender === specific.gender)
-    && (desired.campus === 'any' || desired.campus === specific.campus)
+    && campusMatches
     && capacityMatches
     && (desired.bunkBed === 'any' || desired.bunkBed === specific.bunkBed);
 };

@@ -13,6 +13,12 @@ export const CAMPUS_OPTIONS = [
   { value: Campus.West, label: 'Batı Kampüsü' },
 ];
 
+export const DESIRED_CAMPUS_OPTIONS = [
+  { value: Campus.Main, label: 'Ana Kampüs' },
+  { value: Campus.West, label: 'Batı Kampüsü' },
+  { value: 'multiple', label: 'Birden fazla seçenek uygun' },
+];
+
 export const CAPACITY_OPTIONS = [
   { value: Capacity.One, label: '1 Kişilik' },
   { value: Capacity.Two, label: '2 Kişilik' },

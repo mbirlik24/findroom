@@ -108,7 +108,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Aktif Kullanıcı</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatNumber(roommateStats?.totalRoommateSearches || 0)}
+                {formatNumber(analytics.totalUsers)}
               </p>
             </div>
           </div>

@@ -42,7 +42,8 @@ export interface SpecificDormInfo {
 // Represents desired dorm criteria, allowing for flexible 'any' options
 export interface DesiredDormInfo {
   gender: Gender | 'any';
-  campus: Campus | 'any';
+  campus: Campus | 'any' | 'multiple';
+  preferredCampuses?: Campus[];
   capacity: Capacity | 'any' | 'multiple';
   preferredCapacities?: Capacity[];
   bunkBed: boolean | 'any';

@@ -22,10 +22,14 @@ const initialFilters: FilterCriteria = {
 const dormMatchesFilter = (listing: Listing, filters: FilterCriteria): boolean => {
     const { currentDorm } = listing;
     if (filters.gender !== 'any' && currentDorm.gender !== filters.gender) return false;
-    if (filters.campus !== 'any' && currentDorm.campus !== filters.campus) return false;
+    
+    // Handle campus filtering with 'multiple' option
+    if (filters.campus !== 'any' && filters.campus !== 'multiple' && currentDorm.campus !== filters.campus) return false;
+    if (filters.campus === 'multiple' && filters.preferredCampuses && filters.preferredCampuses.length > 0 && !filters.preferredCampuses.includes(currentDorm.campus)) return false;
     
     // Handle capacity filtering with new 'multiple' option
     if (filters.capacity !== 'any' && filters.capacity !== 'multiple' && currentDorm.capacity !== filters.capacity) return false;
+    if (filters.capacity === 'multiple' && filters.preferredCapacities && filters.preferredCapacities.length > 0 && !filters.preferredCapacities.includes(currentDorm.capacity)) return false;
     
     if (filters.bunkBed !== 'any' && currentDorm.bunkBed !== filters.bunkBed) return false;
     return true;
@@ -92,6 +96,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ listings, myListingId,
               emphasizeDescription={true}
               isOwnListing={listing.id === myListingId}
               onDeleteListing={onDeleteListing}
+              onEditListing={listing.id === myListingId ? onCreateRequest : undefined}
               onCreateRequest={!myListingId ? onCreateRequest : undefined}
             />
           ))}

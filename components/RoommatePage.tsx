@@ -231,41 +231,47 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
 
       {/* My Search Display */}
       {myRoommateSearch && !showForm && (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <UserGroupIcon className="w-5 h-5 text-indigo-600 mr-2"/>
-              <h2 className="text-lg font-bold text-gray-900">Aramam</h2>
-            </div>
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 min-w-0 w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-gray-100">
             <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+              </span>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">Aramam (Yayında)</h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 justify-end sm:justify-start">
               <button
+                type="button"
                 onClick={() => {
                   const text = `Selam! FindRoom'da oda arkadaşı arıyorum.\n\n📍 Kampüs/Oda: ${myRoommateSearch.campus} - ${myRoommateSearch.building} Binası, Oda ${myRoommateSearch.roomNumber}\n\nOda arkadaşım olmak veya bakmak için: https://www.kudorm.com`;
                   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                 }}
-                className="px-2.5 py-1 text-xs bg-emerald-600 text-white font-medium rounded hover:bg-emerald-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-emerald-500 flex items-center gap-1 transition-colors"
+                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all shadow-xs"
                 title="WhatsApp gruplarında paylaş"
               >
-                <span>WhatsApp'ta Paylaş</span>
+                <span>WhatsApp</span>
               </button>
               <button 
+                type="button"
                 onClick={() => setShowForm(true)} 
-                className="px-2.5 py-1 text-xs bg-indigo-600 text-white font-medium rounded hover:bg-indigo-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-indigo-500 flex items-center gap-1 transition-colors"
+                className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all shadow-xs"
               >
                 <FaEdit size={12} />
-                Düzenle
+                <span>Düzenle</span>
               </button>
               {onDeleteRoommateSearch && (
                 <button
+                  type="button"
                   onClick={() => {
                     if (window.confirm('Oda arkadaşı aramanızı silmek istediğinizden emin misiniz?')) {
                       onDeleteRoommateSearch(myRoommateSearch.id);
                     }
                   }}
-                  className="px-2.5 py-1 text-xs bg-red-600 text-white font-medium rounded hover:bg-red-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-red-500 flex items-center gap-1 transition-colors"
+                  className="inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700 active:scale-95 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-all shadow-xs"
                 >
                   <FaTimes size={12} />
-                  Aramayı Sil
+                  <span>Aramayı Sil</span>
                 </button>
               )}
             </div>

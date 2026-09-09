@@ -98,9 +98,15 @@ export const ListingForm: React.FC<ListingFormProps> = ({ onAddListing, myListin
   const FormSuccess = () => {
     const handleShareWhatsApp = () => {
       const cur = `${currentDorm.campus} ${currentDorm.capacity}`;
-      const des = desiredDorm.capacity === 'multiple' 
+      const desCampus = desiredDorm.campus === 'multiple'
+        ? (desiredDorm.preferredCampuses && desiredDorm.preferredCampuses.length > 0
+            ? desiredDorm.preferredCampuses.join('/')
+            : 'Ana/Batı Kampüs')
+        : (desiredDorm.campus === 'any' ? 'Fark etmez' : desiredDorm.campus);
+      const desCapacity = desiredDorm.capacity === 'multiple' 
         ? desiredDorm.preferredCapacities?.join('/') 
         : (desiredDorm.capacity === 'any' ? 'fark etmez' : desiredDorm.capacity);
+      const des = `${desCampus} ${desCapacity}`;
       const text = `Selamlar! FindRoom'da yurt takas talebi oluşturdum.\n\n📍 Mevcut: ${cur}\n🎯 Aradığım: ${des}\n\nEşleşmek veya detaylara bakmak için: https://www.kudorm.com`;
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     };

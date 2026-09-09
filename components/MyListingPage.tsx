@@ -275,11 +275,36 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
         </div>
       )}
 
+      {/* Yayındaki İlanım Bölümü - Form kapalıyken en üstte görünür */}
+      {myListing && !showForm && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+              Yayındaki İlanınız
+            </h2>
+          </div>
+          <ListingCard 
+            listing={myListing} 
+            isOwnListing={true} 
+            onDeleteListing={onDeleteListing}
+            onEditListing={() => setShowForm(true)}
+          />
+        </div>
+      )}
+
       {/* Eşleşmeler Bölümü */}
-      {myListing && (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Eşleşmelerim</h2>
-          <p className="text-gray-600 mb-6">Aşağıda hem sizin istediğiniz yurda sahip olan hem de sizin yurdunuzu isteyen kişilerin ilanları listelenmiştir.</p>
+      {myListing && !showForm && (
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Eşleşmelerim</h2>
+            {matches.length > 0 && (
+              <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">
+                {matches.length} Eşleşme Bulundu
+              </span>
+            )}
+          </div>
+          <p className="text-xs sm:text-sm text-gray-600 mb-5">Aşağıda hem sizin istediğiniz yurda sahip olan hem de sizin yurdunuzu isteyen kişilerin ilanları listelenmiştir.</p>
           
           {matches.length > 0 ? (
             <div className="grid grid-cols-1 gap-6">
@@ -288,35 +313,16 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 px-6 bg-gray-50 rounded-lg">
-              <div className="flex justify-center items-center mx-auto w-16 h-16 bg-orange-100 rounded-full">
-                <ExclamationTriangleIcon className="w-8 h-8 text-orange-600"/>
+            <div className="text-center py-10 px-4 sm:px-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              <div className="flex justify-center items-center mx-auto w-12 h-12 bg-orange-100 rounded-full">
+                <ExclamationTriangleIcon className="w-6 h-6 text-orange-600"/>
               </div>
-              <h3 className="mt-4 text-lg font-bold text-gray-800">Henüz Eşleşme Bulunamadı</h3>
-              <p className="mt-2 text-gray-500">
-                Endişelenmeyin! Yeni ilanlar geldikçe burada görünecek.
+              <h3 className="mt-3 text-base font-bold text-gray-800">Henüz Karşılıklı Eşleşme Bulunamadı</h3>
+              <p className="mt-1.5 text-xs sm:text-sm text-gray-500 max-w-md mx-auto">
+                Endişelenmeyin! Talebiniz sistemde yayında. Sizin odanızı arayan yeni bir öğrenci talep oluşturduğunda eşleşmeniz burada otomatik görünecektir.
               </p>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Kendi İlanım Bölümü */}
-      {myListing && !showForm && (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <PlusCircleIcon className="w-5 h-5 text-indigo-600 mr-2"/>
-              <h2 className="text-lg font-bold text-gray-900">İlanım</h2>
-            </div>
-            <button 
-              onClick={() => setShowForm(true)} 
-              className="px-2 py-1 text-xs bg-indigo-600 text-white font-medium rounded hover:bg-indigo-700 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-indigo-500"
-            >
-              Düzenle
-            </button>
-          </div>
-          <ListingCard listing={myListing} isOwnListing={true} onDeleteListing={onDeleteListing} />
         </div>
       )}
     </div>

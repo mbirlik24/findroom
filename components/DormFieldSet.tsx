@@ -1,7 +1,7 @@
 import React from 'react';
-import { Capacity } from '../types';
+import { Capacity, Campus } from '../types';
 import type { SpecificDormInfo, DesiredDormInfo } from '../types';
-import { GENDER_OPTIONS, CAMPUS_OPTIONS, CAPACITY_OPTIONS, DESIRED_CAPACITY_OPTIONS, BUNKBED_OPTIONS } from '../constants';
+import { GENDER_OPTIONS, CAMPUS_OPTIONS, DESIRED_CAMPUS_OPTIONS, CAPACITY_OPTIONS, DESIRED_CAPACITY_OPTIONS, BUNKBED_OPTIONS } from '../constants';
 
 type DormInfo = SpecificDormInfo | DesiredDormInfo;
 
@@ -55,13 +55,13 @@ export const DormFieldSet = <T extends DormInfo>({ title, isDesired, values, onC
   const titleColor = isDesired ? 'text-pink-800' : 'text-blue-800';
   
   return (
-    <fieldset className={`${bgColor} p-4 sm:p-6 rounded-xl shadow-sm border ${borderColor}`}>
+    <fieldset className={`${bgColor} min-w-0 w-full max-w-full p-4 sm:p-6 rounded-xl shadow-sm border ${borderColor} box-border`}>
       <legend className={`text-base sm:text-lg font-bold ${titleColor} mb-4 sm:mb-5`}>{title}</legend>
       
       {isDesired && (
         <div className="mb-4 p-3 bg-pink-100 border border-pink-300 rounded-lg">
           <p className="text-xs text-pink-700">
-            Birden fazla oda tipi istiyorsanız "Birden fazla seçenek uygun" seçeneğini kullanabilir ve detayları aşağıda belirtebilirsiniz.
+            Birden fazla kampüs veya oda tipi istiyorsanız "Birden fazla seçenek uygun" seçeneğini kullanabilir ve detayları aşağıda belirtebilirsiniz.
           </p>
         </div>
       )}
@@ -80,7 +80,7 @@ export const DormFieldSet = <T extends DormInfo>({ title, isDesired, values, onC
           name="campus"
           value={values.campus}
           onChange={(field, value) => onChange(field as keyof T, value)}
-          options={CAMPUS_OPTIONS}
+          options={isDesired ? DESIRED_CAMPUS_OPTIONS : CAMPUS_OPTIONS}
           allowAny={isDesired}
         />
         <SelectInput
@@ -100,6 +100,34 @@ export const DormFieldSet = <T extends DormInfo>({ title, isDesired, values, onC
           allowAny={isDesired}
         />
       </div>
+
+      {/* Multiple campus preferences */}
+      {isDesired && values.campus === 'multiple' && (
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-pink-800 mb-3">
+            Hangi kampüsler uygun? (Birden fazla seçebilirsiniz)
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+            {CAMPUS_OPTIONS.map(option => (
+              <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(values as DesiredDormInfo).preferredCampuses?.includes(option.value as Campus) || false}
+                  onChange={(e) => {
+                    const currentPrefs = (values as DesiredDormInfo).preferredCampuses || [];
+                    const newPrefs = e.target.checked
+                      ? [...currentPrefs, option.value as Campus]
+                      : currentPrefs.filter(camp => camp !== option.value);
+                    onChange('preferredCampuses' as keyof T, newPrefs);
+                  }}
+                  className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-pink-300 rounded"
+                />
+                <span className="text-sm text-pink-700">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Multiple room type preferences */}
       {isDesired && values.capacity === 'multiple' && (
