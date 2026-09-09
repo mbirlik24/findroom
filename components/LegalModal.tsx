@@ -136,30 +136,30 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, initial
               </div>
 
               <p className="text-gray-600">
-                Gizliliğiniz bizim için önceliklidir. Bu Gizlilik Politikası, platformu kullanırken paylaştığınız verilerin kapsamını ve nasıl işlendiğini özetler.
+                Gizliliğiniz ve güvenliğiniz bizim için en temel ilkedir. Bu politika, platformu kullanırken paylaştığınız verilerin kapsamını, eşleşme mekanizmasının işleyişini ve silinme sürecini açıklar.
               </p>
 
               <div className="space-y-3">
                 <div className="p-3.5 sm:p-4 rounded-xl bg-gray-50 border border-gray-100">
                   <h4 className="font-semibold text-gray-900 mb-1">1. Toplanan Bilgiler</h4>
                   <ul className="list-disc list-inside space-y-1 text-gray-600 text-xs sm:text-sm">
-                    <li>Gönüllü İletişim Bilgileri: Telegram kullanıcı adı, telefon numarası veya e-posta adresi.</li>
-                    <li>Yurt ve Oda Tercihleri: Mevcut ve hedeflenen yurt/oda detayları.</li>
-                    <li>Teknik Veriler: İlanınızı cihazınız üzerinden yönetebilmeniz için localStorage üzerinde tutulan anonim kimlik belirteci.</li>
+                    <li>Gönüllü İletişim Bilgileri: Kullanıcının kendi rızasıyla girdiği Telegram, Instagram kullanıcı adı veya telefon numarası.</li>
+                    <li>Yurt ve Oda Tercihleri: Mevcut ve hedeflenen yurt, kampüs, oda tipi ve tercihler.</li>
+                    <li>Teknik Veri: İlanınızı cihazınız üzerinden yönetebilmeniz için tarayıcınızın yerel depolama (localStorage) alanında tutulan anonim kimlik belirteci.</li>
                   </ul>
                 </div>
 
                 <div className="p-3.5 sm:p-4 rounded-xl bg-gray-50 border border-gray-100">
-                  <h4 className="font-semibold text-gray-900 mb-1">2. Bilgilerin Yayınlanması</h4>
-                  <p className="text-gray-600 text-xs sm:text-sm">
-                    İlanınıza yazdığınız iletişim ve yurt tercihleri, diğer öğrencilerin sizinle iletişime geçebilmesi adına platformda açık olarak listelenir. Verileriniz hiçbir reklam kuruluşuna veya pazarlama firmasına satılmaz ya da devredilmez.
+                  <h4 className="font-semibold text-gray-900 mb-1">2. Eşleşme Mekanizması ve Geçici Veri İşleme</h4>
+                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                    Sistemimizin yurt takas veya oda arkadaşı eşleşmelerini tespit edebilmesi için, paylaştığınız oda kriterleri ve iletişim bilginiz <strong>yalnızca ilanınız yayında kaldığı süre boyunca geçici olarak</strong> veri tabanında tutulur ve eşleşme algoritması tarafından karşılaştırılır. Bilgileriniz profil çıkarma, reklam, pazarlama veya veri madenciliği amacıyla asla kullanılmaz; üçüncü kişilere devredilmez ya da satılmaz.
                   </p>
                 </div>
 
                 <div className="p-3.5 sm:p-4 rounded-xl bg-gray-50 border border-gray-100">
-                  <h4 className="font-semibold text-gray-900 mb-1">3. Veri Silme ve Güncelleme</h4>
-                  <p className="text-gray-600 text-xs sm:text-sm">
-                    İlanınızı dilediğiniz an &quot;İlanı Sil&quot; veya &quot;Aramayı Sil&quot; butonlarını kullanarak sistemden tamamen kaldırabilirsiniz. İlan silindiğinde ilgili kayıtlar veritabanından kalıcı olarak silinir.
+                  <h4 className="font-semibold text-gray-900 mb-1">3. Verilerin Kalıcı Olarak Silinmesi ve İmha</h4>
+                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                    Verileriniz kalıcı bir arşivde saklanmaz. İlan sahibi arayüzdeki <strong>&quot;İlanı Sil&quot;</strong> veya <strong>&quot;Aramayı Sil&quot;</strong> butonuna bastığı anda ya da ilgili akademik dönem sona erdiğinde tüm iletişim ve oda verileri sunuculardan ve veri tabanından <strong>anında ve kalıcı olarak</strong> silinir.
                   </p>
                 </div>
               </div>
@@ -174,30 +174,30 @@ export const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, initial
               </div>
 
               <p className="text-gray-600">
-                6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;) uyarınca, kişisel verilerinizin işlenme şartları ve yasal haklarınız aşağıda bilgilerinize sunulmuştur.
+                6698 sayılı Kişisel Verilerin Korunması Kanunu (&quot;KVKK&quot;) uyarınca, kişisel verilerinizin işlenme şartları, süre sınırları ve haklarınız aşağıda özetlenmiştir.
               </p>
 
               <div className="space-y-3">
                 <div className="p-3.5 sm:p-4 rounded-xl bg-gray-50 border border-gray-100">
-                  <h4 className="font-semibold text-gray-900 mb-1">1. Veri Sorumlusu ve Açık Rıza</h4>
+                  <h4 className="font-semibold text-gray-900 mb-1">1. Veri Sorumlusu ve Açık Rıza Dayanağı</h4>
                   <p className="text-gray-600 text-xs sm:text-sm">
-                    FindRoom platformu, sunduğunuz iletişim ve tercih verilerini KVKK Madde 5/1 uyarınca &quot;Açık Rızanız&quot; hukuki sebebine dayanarak işler.
+                    FindRoom bağımsız bir öğrenci bilgilendirme ve eşleşme panosudur. Sunduğunuz veriler, KVKK Madde 5/1 uyarınca tamamen sizin <strong>&quot;Açık Rızanız&quot;</strong> hukuki sebebine dayanarak işlenir.
                   </p>
                 </div>
 
                 <div className="p-3.5 sm:p-4 rounded-xl bg-gray-50 border border-gray-100">
-                  <h4 className="font-semibold text-gray-900 mb-1">2. Verilerin İşlenme Amacı</h4>
-                  <p className="text-gray-600 text-xs sm:text-sm">
-                    Kişisel verileriniz, yalnızca yurt takas talebinizin ve oda arkadaşı arayışınızın panoda yayınlanması ve uygun eşleşmeler için ilgilenen öğrencilerin sizinle iletişim kurması amacıyla kullanılır.
+                  <h4 className="font-semibold text-gray-900 mb-1">2. Amaca Bağlılık ve Süreyle Sınırlılık (KVKK Madde 4)</h4>
+                  <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                    Kişisel verileriniz, Kanun&apos;un 4. maddesindeki temel ilkeler gereğince yalnızca <em>&quot;öğrenciler arası yurt takas ve oda arkadaşı eşleştirmesi&quot;</em> açık ve meşru amacıyla ve <strong>sadece bu amacın gerektirdiği süreyle (ilanınız aktif olduğu müddetçe)</strong> sınırlı olarak işlenir. Amacın dışına çıkacak hiçbir ikincil işlem gerçekleştirilmez.
                   </p>
                 </div>
 
                 <div className="p-3.5 sm:p-4 rounded-xl bg-gray-50 border border-gray-100">
-                  <h4 className="font-semibold text-gray-900 mb-1">3. KVKK Kapsamındaki Haklarınız (Madde 11)</h4>
+                  <h4 className="font-semibold text-gray-900 mb-1">3. Veri Sahibi Olarak Haklarınız (KVKK Madde 11)</h4>
                   <ul className="list-disc list-inside space-y-1 text-gray-600 text-xs sm:text-sm">
-                    <li>Verilerinizin işlenip işlenmediğini ve amacına uygunluğunu öğrenme,</li>
-                    <li>Eksik veya yanlış işlenmişse düzeltilmesini talep etme,</li>
-                    <li>İlanınızı silerek açık rızanızı geri çekme ve verilerinizin silinmesini isteme hakkına sahipsiniz.</li>
+                    <li>Verilerinizin yalnızca eşleşme amacıyla işlenip işlenmediğini öğrenme,</li>
+                    <li>İlanınızı istediğiniz an &quot;Düzenle&quot; butonuyla güncelleme,</li>
+                    <li>İlanınızı dilediğiniz an &quot;İlanı Sil&quot; butonuna basarak açık rızanızı geri çekme ve tüm verilerinizin derhal kalıcı olarak silinmesini sağlama hakkına sahipsiniz.</li>
                   </ul>
                 </div>
               </div>

@@ -161,6 +161,24 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
         </div>
       </div>
 
+      {/* Veri Güvencesi & Geçici Saklama */}
+      <div className="bg-white border border-emerald-200/90 rounded-xl p-4 shadow-xs">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-base">
+            🔒
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-xs sm:text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <span>Veri Güvencesi & Geçici Eşleşme İlkesi</span>
+              <span className="text-[10px] font-medium bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">KVKK m.4 Uyumlu</span>
+            </h4>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Oda ve iletişim bilgileriniz; <strong>yalnızca ilanınız aktif olduğu sürece</strong> eşleşme algoritmasının çalışması ve ilgilenen öğrencilerin sizinle iletişim kurabilmesi amacıyla geçici olarak işlenir. Bilgileriniz ticari amaçla depolanmaz, satılmaz veya profil çıkarılmaz. İlanınızı sildiğinizde veya dönem tamamlandığında tüm kayıtlarınız sistemden <strong>kalıcı olarak imha edilir</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Talep Oluşturma/Düzenleme Bölümü */}
       {showForm && (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -251,14 +269,14 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
               </div>
               
               <div>
-                <label htmlFor="contactInfo" className="block text-sm font-medium text-purple-800">İletişim Bilgisi (Zorunlu)</label>
+                <label htmlFor="contactInfo" className="block text-sm font-medium text-purple-800">İletişim Adresi (Zorunlu)</label>
                 <input
                   type="text"
                   id="contactInfo"
                   value={contactInfo}
                   onChange={(e) => setContactInfo(e.target.value)}
                   className="mt-1 block w-full h-11 px-4 bg-white border border-purple-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
-                  placeholder="Telefon: 555-555-5555 veya Instagram: @kullaniciadi veya email@adresim.com"
+                  placeholder="Örn: Instagram: @kullaniciadi, Tel veya E-posta"
                   required
                 />
               </div>
@@ -300,6 +318,9 @@ export const MyListingPage: React.FC<MyListingPageProps> = ({
                     'ni okudum. İletişim ve oda bilgilerimin platformda diğer kullanıcılar tarafından görülecek şekilde yayınlanmasını kendi rızamla onaylıyorum.
                   </span>
                 </label>
+                <p className="text-[11px] text-purple-700/85 mt-2 ml-6 leading-normal">
+                  * Paylaştığınız bilgiler profil çıkarma veya kalıcı arşivleme amacıyla tutulmaz; yalnızca ilanınız yayında kaldığı sürece eşleşme amacıyla geçici işlenir. &quot;İlanı Sil&quot; ile istediğiniz an tüm verilerinizi kalıcı olarak silebilirsiniz.
+                </p>
               </div>
             </div>
 

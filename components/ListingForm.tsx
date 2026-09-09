@@ -197,14 +197,14 @@ export const ListingForm: React.FC<ListingFormProps> = ({ onAddListing, myListin
         </div>
         
         <div>
-          <label htmlFor="contactInfo" className="block text-sm font-medium text-purple-800">İletişim Bilgisi (Zorunlu)</label>
+          <label htmlFor="contactInfo" className="block text-sm font-medium text-purple-800">İletişim Adresi (Zorunlu)</label>
           <input
             type="text"
             id="contactInfo"
             value={contactInfo}
             onChange={(e) => setContactInfo(e.target.value)}
             className="mt-1 block w-full h-10 sm:h-11 px-3 sm:px-4 bg-white border border-purple-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition duration-200"
-            placeholder="Örn: Telegram: @kullaniciadi veya email@adresim.com"
+            placeholder="Örn: Instagram: @kullaniciadi, Tel veya E-posta"
             required
           />
         </div>

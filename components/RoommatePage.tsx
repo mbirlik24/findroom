@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Campus, type RoommateSearch, type RoommateSearchForm } from '../types';
 import { UserGroupIcon, PlusCircleIcon } from './icons';
 import { FaEdit, FaTimes, FaCheck, FaSpinner } from 'react-icons/fa';
+import { ContactDisplay } from './ContactDisplay';
 
 interface RoommatePageProps {
   roommateSearches: RoommateSearch[];
@@ -83,8 +84,8 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.campus || !formData.building || !formData.roomNumber || !formData.contactInfo.trim()) {
-      alert('Lütfen tüm alanları doldurun.');
+    if (!formData.campus || !formData.building || !formData.roomNumber || !formData.contactInfo.trim()) {
+      alert('Lütfen kampüs, bina, oda numarası ve iletişim adresini doldurun.');
       return;
     }
 
@@ -97,7 +98,7 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
     
     const newSearch: RoommateSearch = {
       id: myRoommateSearch?.id || `roommate-${Date.now()}`,
-      name: formData.name.trim(),
+      name: formData.name.trim() || 'İsimsiz Öğrenci',
       contactInfo: formData.contactInfo.trim(),
       campus: formData.campus as Campus,
       building: normalize(formData.building),
@@ -140,6 +141,24 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
         </div>
       </div>
 
+      {/* Veri Güvencesi & Geçici Saklama */}
+      <div className="bg-white border border-emerald-200/90 rounded-xl p-4 shadow-xs">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-base">
+            🔒
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-xs sm:text-sm font-semibold text-gray-900 flex items-center gap-2">
+              <span>Veri Güvencesi & Geçici Eşleşme İlkesi</span>
+              <span className="text-[10px] font-medium bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">KVKK m.4 Uyumlu</span>
+            </h4>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Oda ve iletişim bilgileriniz; <strong>yalnızca aramanız aktif olduğu sürece</strong> eşleşme algoritmasının çalışması ve oda arkadaşınızın sizinle iletişim kurabilmesi amacıyla geçici olarak işlenir. Bilgileriniz profil çıkarma veya reklam amacıyla tutulmaz. Aramanızı sildiğinizde verileriniz sistemden <strong>kalıcı olarak imha edilir</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Roommate Search Form */}
       {showForm && (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
@@ -151,14 +170,13 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">İsim Soyisim</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">İsim / Rumuz (İsteğe Bağlı)</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   className="w-full h-11 px-4 bg-white border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="Adınızı ve soyadınızı giriniz"
-                  required
+                  placeholder="İsminiz, rumuz veya boş bırakabilirsiniz"
                 />
               </div>
 
@@ -202,17 +220,18 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
                   placeholder="Örn: 205, 101"
                   disabled={!formData.building}
                   required
-                />
+                >
+                </input>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">İletişim Bilgisi</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">İletişim Adresi (Zorunlu)</label>
                 <input
                   type="text"
                   value={formData.contactInfo}
                   onChange={(e) => handleInputChange('contactInfo', e.target.value)}
                   className="w-full h-11 px-4 bg-white border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="Bir iletişim bilgisi giriniz."
+                  placeholder="Örn: Instagram: @kullaniciadi, Tel veya E-posta"
                   required
                 />
               </div>
@@ -254,6 +273,9 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
                     'ni okudum. Ad-soyad ve iletişim bilgilerimin oda arkadaşı arama listesinde görünmesini kendi rızamla onaylıyorum.
                   </span>
                 </label>
+                <p className="text-[11px] text-gray-500 mt-2 ml-6 leading-normal">
+                  * Bilgileriniz kalıcı arşivlenmez; yalnızca aramanız süresince eşleşme amacıyla geçici işlenir. &quot;Aramayı Sil&quot; butonuyla istediğiniz an silebilirsiniz.
+                </p>
               </div>
             </div>
 
@@ -324,9 +346,10 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
               <p className="text-sm text-gray-600">
                 <span className="font-medium">Oda Numarası:</span> {myRoommateSearch.roomNumber}
               </p>
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">İletişim:</span> {myRoommateSearch.contactInfo}
-              </p>
+              <div className="text-sm text-gray-600 sm:col-span-2 pt-1 border-t border-gray-100">
+                <span className="font-medium block mb-1.5">İletişim Adresi:</span>
+                <ContactDisplay contactInfo={myRoommateSearch.contactInfo} />
+              </div>
             </div>
           </div>
         </div>
@@ -352,10 +375,11 @@ export const RoommatePage: React.FC<RoommatePageProps> = ({
                       <p className="text-sm text-gray-600">
                         {match.campus} - {match.building} - Oda {match.roomNumber}
                       </p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        İletişim: {match.contactInfo}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <div className="mt-2">
+                        <span className="font-medium text-xs text-gray-500 block mb-1">İletişim Adresi:</span>
+                        <ContactDisplay contactInfo={match.contactInfo} />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
                         {new Date(match.createdAt).toLocaleDateString('tr-TR')}
                       </p>
                     </div>

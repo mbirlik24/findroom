@@ -8,7 +8,7 @@ import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { Footer } from './components/Footer';
 import { LegalModal, type LegalTab } from './components/LegalModal';
 import { SwapIcon, SearchIcon, UserGroupIcon, ChartBarIcon } from './components/icons';
-import { getListings, saveListing, deleteListing, getRoommateSearches, saveRoommateSearch, deleteRoommateSearch, createOrUpdateUser, getUser, updateUserLastActive, testFirebaseConnection } from './firebase/firestoreService';
+import { getListings, saveListing, deleteListing, getRoommateSearches, saveRoommateSearch, deleteRoommateSearch, createOrUpdateUser, getUser, updateUserLastActive } from './firebase/firestoreService';
 import { NEW_TERM_START_DATE } from './constants';
 import { Analytics as VercelAnalytics } from '@vercel/analytics/react';
 
@@ -31,13 +31,49 @@ const NavButton = ({ isActive, onClick, icon, label }: { isActive: boolean, onCl
 
 
 export default function App() {
-    const [listings, setListings] = useState<Listing[]>([]);
-    const [myListingId, setMyListingId] = useState<string | null>(null);
-    const [roommateSearches, setRoommateSearches] = useState<RoommateSearch[]>([]);
-    const [myRoommateSearchId, setMyRoommateSearchId] = useState<string | null>(null);
+    const [listings, setListings] = useState<Listing[]>(() => {
+        try {
+            const cached = localStorage.getItem('dorm-swap-listings-cache');
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch {}
+        return [];
+    });
+    const [myListingId, setMyListingId] = useState<string | null>(() => {
+        try {
+            return localStorage.getItem('dorm-swap-my-id') || null;
+        } catch {
+            return null;
+        }
+    });
+    const [roommateSearches, setRoommateSearches] = useState<RoommateSearch[]>(() => {
+        try {
+            const cached = localStorage.getItem('dorm-swap-roommates-cache');
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch {}
+        return [];
+    });
+    const [myRoommateSearchId, setMyRoommateSearchId] = useState<string | null>(() => {
+        try {
+            return localStorage.getItem('dorm-swap-roommate-id') || null;
+        } catch {
+            return null;
+        }
+    });
     const [currentView, setCurrentView] = useState<View>('explore');
     const [openListingForm, setOpenListingForm] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(() => {
+        try {
+            return !!localStorage.getItem('dorm-swap-listings-cache');
+        } catch {
+            return false;
+        }
+    });
     const [isNavbarVisible, setIsNavbarVisible] = useState(true);
     const [lastScrollY, setLastScrollY] = useState(0);
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -152,102 +188,113 @@ export default function App() {
         }
     };
     
+    // Cache senkronizasyonu: İlanlar veya oda arkadaşları güncellendikçe localStorage'a yaz
+    useEffect(() => {
+        if (listings.length > 0) {
+            try {
+                localStorage.setItem('dorm-swap-listings-cache', JSON.stringify(listings));
+            } catch {}
+        }
+    }, [listings]);
+
+    useEffect(() => {
+        if (roommateSearches.length > 0) {
+            try {
+                localStorage.setItem('dorm-swap-roommates-cache', JSON.stringify(roommateSearches));
+            } catch {}
+        }
+    }, [roommateSearches]);
+
     useEffect(() => {
         const initializeApp = async () => {
-            console.log('🚀 App initializing...');
-            
-            // Firebase bağlantısını test et
-            const isFirebaseConnected = await testFirebaseConnection();
-            if (!isFirebaseConnected) {
-                console.error('❌ Firebase bağlantısı başarısız!');
-                alert('Veritabanı bağlantısında sorun var. Lütfen internet bağlantınızı kontrol edin.');
-            }
-            
-            // Kullanıcıyı başlat
+            console.log('🚀 App initializing in fast parallel mode...');
             const userId = getOrCreateUserId();
-            await initializeUser(userId);
             
-            const listingsFromDb = await getListings();
-            console.log('📊 Listings from Firebase (New Term):', listingsFromDb.length);
-            // Merge my local listing (if any) if it belongs to the new term
-            let mergedListings = listingsFromDb;
+            // Arka planda kullanıcıyı başlat (ana sayfa listesinin gelmesini bloklamaz)
+            initializeUser(userId).catch(err => console.warn('Non-blocking user init:', err));
+            
             try {
-                const rawMyListing = localStorage.getItem('my-listing');
-                if (rawMyListing) {
-                    const localListing = JSON.parse(rawMyListing) as Listing;
-                    if (localListing.createdAt && localListing.createdAt >= NEW_TERM_START_DATE) {
-                        if (!listingsFromDb.find(l => l.id === localListing.id)) {
-                            mergedListings = [localListing, ...listingsFromDb];
-                        }
-                    } else {
-                        // Clear old term listing from localStorage
-                        localStorage.removeItem('my-listing');
-                        localStorage.removeItem('dorm-swap-my-id');
-                    }
-                }
-            } catch {}
-            setListings(mergedListings);
-            console.log('📊 Final listings count:', mergedListings.length);
-            
-            const roommateFromDb = await getRoommateSearches();
-            console.log('👥 Roommate searches from Firebase (New Term):', roommateFromDb.length);
-            // Load my roommate search from localStorage if it belongs to the new term
-            let localMySearch: RoommateSearch | null = null;
-            try {
-                const raw = localStorage.getItem('my-roommate-search');
-                if (raw) {
-                    const parsed = JSON.parse(raw) as RoommateSearch;
-                    if (parsed.createdAt && parsed.createdAt >= NEW_TERM_START_DATE) {
-                        localMySearch = parsed;
-                    } else {
-                        // Clear old term roommate search from localStorage
-                        localStorage.removeItem('my-roommate-search');
-                        localStorage.removeItem('dorm-swap-roommate-id');
-                    }
-                }
-            } catch {}
-            const merged = localMySearch && !roommateFromDb.find(s => s.id === localMySearch!.id)
-                ? [localMySearch, ...roommateFromDb]
-                : roommateFromDb;
-            setRoommateSearches(merged);
-            console.log('👥 Final roommate searches count:', merged.length);
-            
-            const savedMyId = localStorage.getItem('dorm-swap-my-id');
-            const validMyListing = mergedListings.find(l => l.id === savedMyId);
-            if (validMyListing) {
-                setMyListingId(savedMyId);
-            } else {
-                localStorage.removeItem('dorm-swap-my-id');
-                // Auto-restore by userId from new-term listings only
-                const byUser = mergedListings.find(l => l.userId === userId);
-                if (byUser) {
-                    setMyListingId(byUser.id);
-                } else {
-                    setMyListingId(null);
-                }
-            }
+                // İlanları ve oda arkadaşı aramalarını PARALEL olarak çek
+                const [listingsFromDb, roommateFromDb] = await Promise.all([
+                    getListings(),
+                    getRoommateSearches()
+                ]);
 
-            const savedRoommateId = localStorage.getItem('dorm-swap-roommate-id');
-            const validRoommateSearch = merged.find(s => s.id === savedRoommateId);
-            if (validRoommateSearch) {
-                setMyRoommateSearchId(savedRoommateId);
-            } else {
-                localStorage.removeItem('dorm-swap-roommate-id');
-                if (localMySearch) {
-                    setMyRoommateSearchId(localMySearch.id);
+                console.log('📊 Listings from Firebase (New Term):', listingsFromDb.length);
+                let mergedListings = listingsFromDb;
+                try {
+                    const rawMyListing = localStorage.getItem('my-listing');
+                    if (rawMyListing) {
+                        const localListing = JSON.parse(rawMyListing) as Listing;
+                        if (localListing.createdAt && localListing.createdAt >= NEW_TERM_START_DATE) {
+                            if (!listingsFromDb.find(l => l.id === localListing.id)) {
+                                mergedListings = [localListing, ...listingsFromDb];
+                            }
+                        } else {
+                            localStorage.removeItem('my-listing');
+                            localStorage.removeItem('dorm-swap-my-id');
+                        }
+                    }
+                } catch {}
+                setListings(mergedListings);
+                try {
+                    localStorage.setItem('dorm-swap-listings-cache', JSON.stringify(mergedListings));
+                } catch {}
+                
+                console.log('👥 Roommate searches from Firebase (New Term):', roommateFromDb.length);
+                let localMySearch: RoommateSearch | null = null;
+                try {
+                    const raw = localStorage.getItem('my-roommate-search');
+                    if (raw) {
+                        const parsed = JSON.parse(raw) as RoommateSearch;
+                        if (parsed.createdAt && parsed.createdAt >= NEW_TERM_START_DATE) {
+                            localMySearch = parsed;
+                        } else {
+                            localStorage.removeItem('my-roommate-search');
+                            localStorage.removeItem('dorm-swap-roommate-id');
+                        }
+                    }
+                } catch {}
+                const merged = localMySearch && !roommateFromDb.find(s => s.id === localMySearch!.id)
+                    ? [localMySearch, ...roommateFromDb]
+                    : roommateFromDb;
+                setRoommateSearches(merged);
+                try {
+                    localStorage.setItem('dorm-swap-roommates-cache', JSON.stringify(merged));
+                } catch {}
+
+                const savedMyId = localStorage.getItem('dorm-swap-my-id');
+                const validMyListing = mergedListings.find(l => l.id === savedMyId);
+                if (validMyListing) {
+                    setMyListingId(savedMyId);
                 } else {
-                    const byUser = merged.find(s => s.userId === userId);
-                    if (byUser) {
-                        setMyRoommateSearchId(byUser.id);
+                    localStorage.removeItem('dorm-swap-my-id');
+                    const byUser = mergedListings.find(l => l.userId === userId);
+                    setMyListingId(byUser ? byUser.id : null);
+                }
+
+                const savedRoommateId = localStorage.getItem('dorm-swap-roommate-id');
+                const validRoommateSearch = merged.find(s => s.id === savedRoommateId);
+                if (validRoommateSearch) {
+                    setMyRoommateSearchId(savedRoommateId);
+                } else {
+                    localStorage.removeItem('dorm-swap-roommate-id');
+                    if (localMySearch) {
+                        setMyRoommateSearchId(localMySearch.id);
                     } else {
-                        setMyRoommateSearchId(null);
+                        const byUser = merged.find(s => s.userId === userId);
+                        setMyRoommateSearchId(byUser ? byUser.id : null);
                     }
                 }
+            } catch (error) {
+                console.error('Data initialization error:', error);
+            } finally {
+                // Her halükarda arayüzü aç
+                setIsInitialized(true);
             }
 
             // Always start on Keşfet
             setCurrentView('explore');
-            setIsInitialized(true);
         };
         initializeApp();
     }, [addNotification]);
@@ -643,7 +690,7 @@ export default function App() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
             <header className={`fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-xs transition-transform duration-300 ease-in-out ${
                 isNavbarVisible ? 'translate-y-0' : '-translate-y-full sm:translate-y-0'
             }`}>
@@ -788,9 +835,19 @@ export default function App() {
                 </div>
             </div>
 
-            <main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-24 sm:pt-24 sm:pb-12 flex-grow">
+            <main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-28 sm:pt-24 sm:pb-12 flex-1 w-full">
                 <div className="max-w-4xl mx-auto">
-                   {isInitialized ? renderView() : <div className="text-center p-10">Yükleniyor...</div>}
+                   {isInitialized ? renderView() : (
+                       <div className="space-y-6 animate-pulse pt-4">
+                           <div className="h-9 w-32 bg-gray-200 rounded-lg"></div>
+                           <div className="h-24 bg-gray-200 rounded-xl"></div>
+                           <div className="space-y-4">
+                               <div className="h-36 bg-gray-200 rounded-xl"></div>
+                               <div className="h-36 bg-gray-200 rounded-xl"></div>
+                               <div className="h-36 bg-gray-200 rounded-xl"></div>
+                           </div>
+                       </div>
+                   )}
                 </div>
             </main>
             

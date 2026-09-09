@@ -7,7 +7,7 @@ interface FooterProps {
 
 export const Footer: React.FC<FooterProps> = ({ onOpenLegal }) => {
   return (
-    <footer className="mt-12 py-6 pb-24 sm:pb-8 text-center text-xs text-gray-400 border-t border-gray-100">
+    <footer className="mt-auto w-full py-6 pb-28 sm:pb-8 text-center text-xs text-gray-400 border-t border-gray-100 bg-white/60">
       <div className="container mx-auto px-4 max-w-xl space-y-3">
         {/* Yasal Bağlantılar */}
         <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-medium text-gray-500">

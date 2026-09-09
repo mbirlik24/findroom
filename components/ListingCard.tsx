@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import type { Listing } from '../types';
 import { SwapIcon } from './icons';
 import { DormInfoCard } from './DormInfoCard';
+import { ContactDisplay } from './ContactDisplay';
 
 interface ListingCardProps {
   listing: Listing;
@@ -118,10 +119,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({ listing, emphasizeDesc
         <div className="px-4 sm:px-6 pb-4 sm:pb-6 bg-gray-50/70 border-t border-gray-200">
           <div className="pt-3 sm:pt-4 space-y-3 sm:space-y-4">
             <div>
-                <h4 className="font-semibold text-gray-700 text-sm sm:text-base">İletişim Bilgisi</h4>
-                <p className="mt-1 text-indigo-700 font-semibold text-xs sm:text-sm bg-indigo-100 inline-block px-2 sm:px-3 py-1 rounded-full break-all">
-                    {listing.contactInfo}
-                </p>
+                <h4 className="font-semibold text-gray-700 text-sm sm:text-base mb-2">İletişim Adresi</h4>
+                <ContactDisplay contactInfo={listing.contactInfo} />
             </div>
             <p className="text-xs text-gray-400 text-right pt-2">
                 İlan Tarihi: {new Date(listing.createdAt).toLocaleDateString('tr-TR')}
