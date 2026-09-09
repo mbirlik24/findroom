@@ -18,8 +18,14 @@
 }
 
 /* Ensure proper scrolling on mobile */
-html, body {
+html {
+  scroll-behavior: auto !important;
+}
+
+body {
   overflow-x: hidden;
+  position: relative;
+  width: 100%;
 }
 
 /* Improve touch targets for mobile */

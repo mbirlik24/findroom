@@ -29,6 +29,35 @@ const NavButton = ({ isActive, onClick, icon, label }: { isActive: boolean, onCl
     </button>
 );
 
+const scrollToTop = () => {
+    try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    } catch {}
+    try {
+        window.scrollTo(0, 0);
+    } catch {}
+    if (document.scrollingElement) {
+        document.scrollingElement.scrollTop = 0;
+    }
+    if (document.documentElement) {
+        document.documentElement.scrollTop = 0;
+    }
+    if (document.body) {
+        document.body.scrollTop = 0;
+    }
+    const root = document.getElementById('root');
+    if (root) {
+        root.scrollTop = 0;
+    }
+    const topAnchor = document.getElementById('top-anchor');
+    if (topAnchor) {
+        try {
+            topAnchor.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'start' });
+        } catch {
+            topAnchor.scrollIntoView(true);
+        }
+    }
+};
 
 export default function App() {
     const [listings, setListings] = useState<Listing[]>(() => {
@@ -634,31 +663,42 @@ export default function App() {
         } catch {}
     }, []);
     
+    // Tarayıcının mobil scroll geçmişini geri yüklemesini önle
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+            window.history.scrollRestoration = 'manual';
+        }
+    }, []);
+
     // Sekme değiştiğinde sayfa scroll'unu anında en üste sıfırla ve navbar'ı göster
     useLayoutEffect(() => {
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
+        scrollToTop();
         setIsNavbarVisible(true);
         setLastScrollY(0);
 
-        // Bazı mobil tarayıcılarda layout oturduktan sonra scroll pozisyonunun korunmasını önlemek için bir sonraki frame'de de teyit et
         const raf = requestAnimationFrame(() => {
-            window.scrollTo(0, 0);
-            document.documentElement.scrollTop = 0;
-            document.body.scrollTop = 0;
+            scrollToTop();
         });
+        const t1 = setTimeout(scrollToTop, 20);
+        const t2 = setTimeout(scrollToTop, 80);
+        const t3 = setTimeout(scrollToTop, 200);
 
-        return () => cancelAnimationFrame(raf);
+        return () => {
+            cancelAnimationFrame(raf);
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
+        };
     }, [currentView]);
 
     const handleViewChange = (view: View, resetForm = true) => {
         if (resetForm) setOpenListingForm(false);
-        if (currentView === view) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            document.documentElement.scrollTop = 0;
-            document.body.scrollTop = 0;
-        } else {
+        // Tıklandığı anda gecikmesiz direkt en üste al
+        scrollToTop();
+        setIsNavbarVisible(true);
+        setLastScrollY(0);
+
+        if (currentView !== view) {
             setCurrentView(view);
         }
     };
@@ -719,7 +759,8 @@ export default function App() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-between relative">
+            <div id="top-anchor" className="absolute top-0 left-0 w-0 h-0 pointer-events-none" />
             <header className={`fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-xs transition-transform duration-300 ease-in-out ${
                 isNavbarVisible ? 'translate-y-0' : '-translate-y-full sm:translate-y-0'
             }`}>
@@ -841,7 +882,7 @@ export default function App() {
             </div>
 
             <main className="container mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-28 sm:pt-24 sm:pb-12 flex-1 w-full">
-                <div className="max-w-4xl mx-auto">
+                <div key={currentView} className="max-w-4xl mx-auto">
                    {isInitialized ? renderView() : (
                        <div className="space-y-6 animate-pulse pt-4">
                            <div className="h-9 w-32 bg-gray-200 rounded-lg"></div>
